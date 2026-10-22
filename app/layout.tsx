@@ -21,8 +21,24 @@ const alegreya = localFont({
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-plexmono", display: "swap" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://escapegameci.vercel.app"),
   title: "Escape Game",
   description: "Plateforme d'escape game personnalisable",
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: "Escape Game",
+    url: "/",
+    title: "Escape Game · Énigmes en équipe",
+    description: "Une plateforme d'escape game numérique : chaque équipe suit son parcours d'énigmes.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Escape Game" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Escape Game · Énigmes en équipe",
+    description: "Une plateforme d'escape game numérique : chaque équipe suit son parcours d'énigmes.",
+    images: ["/og-image.png"],
+  },
 };
 
 export const viewport: Viewport = {
