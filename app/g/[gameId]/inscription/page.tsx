@@ -2,17 +2,18 @@
 
 // Page ouverte par un participant qui scanne le QR code d'inscription
 // (affiché ou imprimé depuis l'onglet "Formation des équipes" de l'admin).
-// Il saisit son prénom et son niveau d'étude, puis attend que l'organisateur
-// forme les équipes : son équipe s'affiche alors ici, sans recharger la
-// page. Le niveau d'étude sert uniquement à répartir les niveaux
-// équitablement entre équipes (voir formerEquipes dans lib/data.ts).
+// Il saisit son prénom et les champs définis par l'organisateur (par défaut :
+// son niveau d'étude), puis attend que l'organisateur forme les équipes : son
+// équipe s'affiche alors ici, sans recharger la page. Le champ choisi comme
+// critère de mélange sert uniquement à répartir équitablement les profils
+// entre équipes (voir formerEquipes dans lib/data.ts).
 // L'identifiant de son inscription est gardé sur son téléphone pour qu'il
 // retrouve son équipe s'il rouvre la page.
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { ecouterInscription, getQuizConfig, inscrire } from "@/lib/data";
-import { Inscription } from "@/lib/types";
+import { CHAMPS_INSCRIPTION_PAR_DEFAUT, ChampInscription, ID_CHAMP_NIVEAU, Inscription } from "@/lib/types";
 import GameLogo from "@/app/components/GameLogo";
 import LoadingScreen from "@/app/components/LoadingScreen";
 
@@ -40,7 +41,9 @@ export default function InscriptionParticipant() {
   const [inscription, setInscription] = useState<Inscription | null>(null);
   const [inscriptionLue, setInscriptionLue] = useState(false);
   const [prenom, setPrenom] = useState("");
-  const [niveau, setNiveau] = useState("");
+  const [champs, setChamps] = useState<ChampInscription[]>(CHAMPS_INSCRIPTION_PAR_DEFAUT);
+  const [champMelangeId, setChampMelangeId] = useState<string | null>(ID_CHAMP_NIVEAU);
+  const [valeurs, setValeurs] = useState<Record<string, string>>({});
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -50,6 +53,11 @@ export default function InscriptionParticipant() {
       .then((c) => {
         setNomJeu(c.nom ?? "");
         setOuvertes(!!c.inscriptionsOuvertes);
+        // Formulaire défini par l'organisateur ; à défaut, prénom + niveau d'étude.
+        if (c.champsInscription && c.champsInscription.length > 0) {
+          setChamps(c.champsInscription);
+          setChampMelangeId(c.champMelangeId ?? null);
+        }
       })
       .catch(() => {})
       .finally(() => setCharge(true));
@@ -74,15 +82,34 @@ export default function InscriptionParticipant() {
   async function envoyer() {
     if (!gameId || envoi) return;
     const p = prenom.trim();
-    const n = niveau.trim();
-    if (!p || !n) {
-      setErreur("Merci d'indiquer ton prénom et ton niveau d'étude.");
+    if (!p) {
+      setErreur("Merci d'indiquer ton prénom.");
       return;
     }
+    const manquant = champs.find((c) => c.obligatoire && !(valeurs[c.id] ?? "").trim());
+    if (manquant) {
+      setErreur(`Merci de renseigner : ${manquant.label}.`);
+      return;
+    }
+    const reponses: Record<string, string> = {};
+    champs.forEach((c) => {
+      const v = (valeurs[c.id] ?? "").trim().slice(0, 60);
+      if (v) reponses[c.id] = v;
+    });
+    // Le critère de mélange est recopié dans `niveau` : c'est ce champ que
+    // lit la formation des équipes ("—" = aucun critère, tirage au hasard).
+    const critere = champMelangeId ? reponses[champMelangeId] : "";
+    // Le formulaire par défaut n'enregistre que prénom + niveau, comme avant.
+    const estDefaut = champs.length === 1 && champs[0].id === ID_CHAMP_NIVEAU;
     setEnvoi(true);
     setErreur(null);
     try {
-      const id = await inscrire(gameId, p.slice(0, 30), n.slice(0, 40));
+      const id = await inscrire(
+        gameId,
+        p.slice(0, 30),
+        (critere || "—").slice(0, 40),
+        estDefaut ? undefined : reponses
+      );
       try {
         window.localStorage.setItem(cleStockage(gameId), id);
       } catch {}
@@ -124,7 +151,7 @@ export default function InscriptionParticipant() {
                 Suivre mon équipe
               </a>
               <a
-                href={`/g/${gameId}/jouer`}
+                href={`/g/${gameId}/jouer?equipe=${inscription.equipeId}`}
                 className="rounded-full border border-acier/50 px-8 py-3 font-semibold text-nuit"
               >
                 Je suis le chef d&apos;équipe
@@ -161,14 +188,41 @@ export default function InscriptionParticipant() {
                 autoComplete="given-name"
                 className={champ}
               />
-              <input
-                value={niveau}
-                onChange={(e) => setNiveau(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && envoyer()}
-                maxLength={40}
-                placeholder="Ton niveau d'étude (ex. Licence 2)"
-                className={champ}
-              />
+              {champs.map((c, idx) => {
+                const valeur = valeurs[c.id] ?? "";
+                const maj = (v: string) => setValeurs((prev) => ({ ...prev, [c.id]: v }));
+                const etiquette = c.obligatoire ? c.label : `${c.label} (facultatif)`;
+                if (c.type === "choix") {
+                  return (
+                    <select
+                      key={c.id}
+                      value={valeur}
+                      onChange={(e) => maj(e.target.value)}
+                      aria-label={etiquette}
+                      className={champ}
+                    >
+                      <option value="">{etiquette}</option>
+                      {(c.options ?? []).map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  );
+                }
+                return (
+                  <input
+                    key={c.id}
+                    value={valeur}
+                    onChange={(e) => maj(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && idx === champs.length - 1 && envoyer()}
+                    maxLength={60}
+                    placeholder={etiquette}
+                    aria-label={etiquette}
+                    className={champ}
+                  />
+                );
+              })}
             </div>
             {erreur && <p className="text-sm text-alerte mt-3">{erreur}</p>}
             <button
@@ -179,7 +233,7 @@ export default function InscriptionParticipant() {
               {envoi ? "Inscription..." : "Je m'inscris"}
             </button>
             <p className="text-xs text-nuit/90 mt-4">
-              Seuls ton prénom et ton niveau d&apos;étude sont enregistrés.
+              Seules les informations ci-dessus sont enregistrées.
             </p>
           </>
         )}

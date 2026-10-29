@@ -138,11 +138,36 @@ export interface BonneReponseSurprise {
 export interface Inscription {
   id: string;
   nom: string; // prénom du participant (pour limiter les données personnelles, pas de nom de famille demandé)
-  niveau: string; // niveau d'étude déclaré par le participant, utilisé pour répartir les niveaux équitablement entre équipes
+  // Valeur du critère de mélange (voir QuizConfig.champMelangeId) : par défaut
+  // le niveau d'étude. C'est ce champ qui sert à répartir équitablement les
+  // participants entre équipes (voir formerEquipes dans lib/data.ts).
+  niveau: string;
+  // Réponses aux champs personnalisés du formulaire, par id de champ (voir
+  // ChampInscription). Absent pour les inscriptions faites avec le formulaire par défaut.
+  reponses?: Record<string, string>;
   equipeId: string | null; // null = pas encore d'équipe
   equipeNom: string | null;
   createdAt: number;
 }
+
+// Champ du formulaire d'inscription, défini par l'organisateur. Le prénom est
+// toujours demandé en plus de ces champs. "texte" = saisie libre ; "choix" =
+// liste de choix (évite les fautes de frappe du type « L2 » / « Licence 2 »
+// qui faussent l'équilibrage quand le champ sert de critère de mélange).
+export interface ChampInscription {
+  id: string;
+  label: string;
+  type: "texte" | "choix";
+  options?: string[]; // uniquement pour "choix"
+  obligatoire: boolean;
+}
+
+// Formulaire par défaut : un seul champ « Niveau d'étude », obligatoire, qui
+// sert de critère de mélange. Les jeux existants ne changent donc pas.
+export const ID_CHAMP_NIVEAU = "niveau";
+export const CHAMPS_INSCRIPTION_PAR_DEFAUT: ChampInscription[] = [
+  { id: ID_CHAMP_NIVEAU, label: "Niveau d'étude (ex. Licence 2)", type: "texte", obligatoire: true },
+];
 
 export interface QuizConfig {
   nom?: string; // nom du jeu, affiché dans la liste des jeux de l'organisateur
@@ -162,6 +187,12 @@ export interface QuizConfig {
   broadcast?: BroadcastMessage | null;
   personnalisation?: Personnalisation | null; // null = retour au thème par défaut
   inscriptionsOuvertes?: boolean; // absent/false = inscriptions fermées (vérifié aussi par les règles Firestore)
+  // Formulaire d'inscription défini par l'organisateur ; absent/vide = formulaire
+  // par défaut (prénom + niveau d'étude, voir CHAMPS_INSCRIPTION_PAR_DEFAUT).
+  champsInscription?: ChampInscription[];
+  // Id du champ qui sert de critère de mélange ; absent = aucun critère
+  // (tirage purement aléatoire) si des champs personnalisés existent, sinon le niveau.
+  champMelangeId?: string | null;
   enigmeSurprise?: EnigmeSurprise | null; // null/absent = aucun événement en cours
   effets?: Record<string, EffetEquipe | null>; // par id d'équipe ; null = effet retiré
 }

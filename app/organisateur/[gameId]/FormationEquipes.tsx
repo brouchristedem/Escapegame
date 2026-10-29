@@ -16,7 +16,8 @@ import {
   repartirRetardataires,
   retirerInscrit,
 } from "@/lib/data";
-import { Inscription, Team } from "@/lib/types";
+import { ChampInscription, Inscription, Team } from "@/lib/types";
+import FormulaireInscription from "./FormulaireInscription";
 
 function champCsv(valeur: string): string {
   return `"${valeur.replace(/"/g, '""')}"`;
@@ -29,10 +30,14 @@ export default function FormationEquipes({ gameId, teams }: { gameId: string; te
   const [qr, setQr] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
+  const [champsConnus, setChampsConnus] = useState<ChampInscription[]>([]);
 
   useEffect(() => {
     getQuizConfig(gameId)
-      .then((c) => setOuvertes(!!c.inscriptionsOuvertes))
+      .then((c) => {
+        setOuvertes(!!c.inscriptionsOuvertes);
+        setChampsConnus(c.champsInscription ?? []);
+      })
       .catch(() => {});
     return ecouterInscriptions(gameId, setInscrits);
   }, [gameId]);
@@ -120,13 +125,28 @@ export default function FormationEquipes({ gameId, teams }: { gameId: string; te
     });
   }
 
-  function exporterCsv() {
+  async function exporterCsv() {
+    // Une colonne par champ personnalisé (libellés relus dans la config du
+    // jeu, au cas où le formulaire vient d'être modifié).
+    let colonnes = champsConnus;
+    try {
+      colonnes = (await getQuizConfig(gameId)).champsInscription ?? champsConnus;
+    } catch {}
     const lignes = [...inscrits]
       .sort((a, b) => (a.equipeNom ?? "￿").localeCompare(b.equipeNom ?? "￿") || a.nom.localeCompare(b.nom))
       .map((i) =>
-        [estAffecte(i) ? (teams.find((t) => t.id === i.equipeId)?.nom ?? "") : "", i.nom, i.niveau].map(champCsv).join(",")
+        [
+          estAffecte(i) ? (teams.find((t) => t.id === i.equipeId)?.nom ?? "") : "",
+          i.nom,
+          i.niveau,
+          ...colonnes.map((c) => i.reponses?.[c.id] ?? ""),
+        ]
+          .map(champCsv)
+          .join(",")
       );
-    const csv = "\uFEFF" + [["Équipe", "Nom", "Niveau"].map(champCsv).join(","), ...lignes].join("\r\n");
+    const csv =
+      "\uFEFF" +
+      [["Équipe", "Nom", "Critère de mélange", ...colonnes.map((c) => c.label)].map(champCsv).join(","), ...lignes].join("\r\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     const a = document.createElement("a");
     a.href = url;
@@ -155,9 +175,8 @@ export default function FormationEquipes({ gameId, teams }: { gameId: string; te
           </div>
           <div className="flex flex-col gap-3">
             <p className="text-sm text-nuit/90">
-              Les participants scannent ce QR code et saisissent leur prénom et leur niveau d&apos;étude (utilisé
-              pour répartir les niveaux équitablement entre équipes). Ouvre l&apos;affiche pour le projeter en
-              plein écran ou l&apos;imprimer.
+              Les participants scannent ce QR code et remplissent le formulaire ci-dessous (par défaut : prénom et
+              niveau d&apos;étude). Ouvre l&apos;affiche pour le projeter en plein écran ou l&apos;imprimer.
             </p>
             <div className="flex flex-wrap gap-2">
               <a
@@ -192,7 +211,12 @@ export default function FormationEquipes({ gameId, teams }: { gameId: string; te
       </div>
 
       <div>
-        <h2 className="font-semibold text-nuit mb-2">2. Former les équipes</h2>
+        <h2 className="font-semibold text-nuit mb-2">2. Formulaire d&apos;inscription</h2>
+        <FormulaireInscription gameId={gameId} />
+      </div>
+
+      <div>
+        <h2 className="font-semibold text-nuit mb-2">3. Former les équipes</h2>
         <div className="bg-brume-clair rounded-xl p-4 flex flex-col gap-3">
           {teams.length === 0 ? (
             <p className="text-sm text-amber-700">
@@ -201,7 +225,7 @@ export default function FormationEquipes({ gameId, teams }: { gameId: string; te
           ) : (
             <p className="text-sm text-nuit/90">
               Répartit tous les inscrits dans les {teams.length} équipes du jeu, en équipes de même taille (à une
-              personne près) et en équilibrant les niveaux d&apos;étude entre équipes
+              personne près) et en équilibrant le critère de mélange choisi (par défaut le niveau d&apos;étude) entre équipes
               {tailleApprox > 0 && <> : environ {tailleApprox} personnes par équipe</>}. Aucune équipe n&apos;est
               créée.
             </p>
@@ -223,7 +247,7 @@ export default function FormationEquipes({ gameId, teams }: { gameId: string; te
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-nuit">3. Composition des équipes</h2>
+          <h2 className="font-semibold text-nuit">4. Composition des équipes</h2>
           {inscrits.length > 0 && (
             <button onClick={exporterCsv} className="text-sm underline text-acier-deep">
               Exporter en CSV
@@ -249,7 +273,11 @@ export default function FormationEquipes({ gameId, teams }: { gameId: string; te
                         <li key={i.id} className="flex flex-col gap-1 text-sm text-nuit">
                           <span className="break-words">
                             {i.nom}
-                            {i.niveau && <span className="text-nuit/90"> · {i.niveau}</span>}
+                            {i.reponses && Object.keys(i.reponses).length > 0 ? (
+                              <span className="text-nuit/90"> · {Object.values(i.reponses).join(" · ")}</span>
+                            ) : (
+                              i.niveau && i.niveau !== "—" && <span className="text-nuit/90"> · {i.niveau}</span>
+                            )}
                             {(doublons.get(i.nom.trim().toLowerCase()) ?? 0) > 1 && (
                               <span className="ml-1 text-amber-600" title="Nom identique à une autre inscription">
                                 ⚠

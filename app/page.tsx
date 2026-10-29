@@ -1,37 +1,33 @@
 "use client";
 
+// Page d'accueil permanente : sombre, bleu glacial pour l'ambiance, rouge sang
+// pour la tension. Plus de liste publique de jeux : le joueur tape le code
+// donné par son organisateur (unique sur tout le site, voir trouverJeuParCode
+// dans lib/data.ts), ou arrive directement par le QR code / le lien du jeu.
+// Tarifs et À propos sont accessibles à tous ; l'espace organisateur n'a
+// qu'un lien discret en pied de page.
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth, estProprietaire } from "@/lib/auth";
 import { WHATSAPP_NUMERO } from "@/app/components/TarifsCards";
-import { listerJeuxPublics, verifierCodeAcces } from "@/lib/data";
-import { GameMeta } from "@/lib/types";
-import GameLogo from "@/app/components/GameLogo";
-import PortraitGardien from "@/app/components/PortraitGardien";
-import Runes from "@/app/components/Runes";
-import LoadingScreen from "@/app/components/LoadingScreen";
+import { trouverJeuParCode } from "@/lib/data";
+import EscapeLogo from "@/app/components/EscapeLogo";
 import Reveal from "@/app/components/gsap/Reveal";
-import SplitReveal from "@/app/components/gsap/SplitReveal";
-import Parallax from "@/app/components/gsap/Parallax";
-
 
 const MAX_TENTATIVES = 3;
 const BLOCAGE_MS = 60_000; // 1 minute de blocage après 3 essais ratés
+const CLE_VERROU = "escape_verrou_accueil";
 
 interface EtatVerrou {
   tentatives: number;
   bloqueJusqua: number | null;
 }
 
-function cleVerrou(gameId: string): string {
-  return `escape_verrou_${gameId}`;
-}
-
-function lireVerrou(gameId: string): EtatVerrou {
+function lireVerrou(): EtatVerrou {
   if (typeof window === "undefined") return { tentatives: 0, bloqueJusqua: null };
   try {
-    const brut = window.localStorage.getItem(cleVerrou(gameId));
+    const brut = window.localStorage.getItem(CLE_VERROU);
     if (!brut) return { tentatives: 0, bloqueJusqua: null };
     return JSON.parse(brut) as EtatVerrou;
   } catch {
@@ -39,138 +35,27 @@ function lireVerrou(gameId: string): EtatVerrou {
   }
 }
 
-function ecrireVerrou(gameId: string, etat: EtatVerrou) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(cleVerrou(gameId), JSON.stringify(etat));
+function ecrireVerrou(etat: EtatVerrou) {
+  try {
+    window.localStorage.setItem(CLE_VERROU, JSON.stringify(etat));
+  } catch {}
 }
 
 export default function Accueil() {
-  const [jeux, setJeux] = useState<GameMeta[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [jeuOuvert, setJeuOuvert] = useState<GameMeta | null>(null);
-
-  const { user } = useAuth();
-
-  useEffect(() => {
-    listerJeuxPublics()
-      .then(setJeux)
-      .finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <main
-      className={`relative min-h-screen flex flex-col items-center overflow-hidden px-6 py-16 bg-brume`}
-    >
-      <Parallax speed={-60} className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-lueur/30 blur-3xl" />
-      <Parallax speed={70} className="pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-lueur/25 blur-3xl" />
-
-      <nav className="relative z-10 w-full max-w-md flex flex-wrap items-center justify-end gap-2 -mt-8 mb-6 text-sm">
-        <Link href="/a-propos" className="px-3 py-1.5 text-nuit/90 hover:text-acier-deep underline">
-          À propos
-        </Link>
-        {user && estProprietaire(user.email) && (
-          <Link
-            href="/admin"
-            className="rounded-full bg-nuit text-brume font-semibold px-4 py-1.5 shadow-md transition hover:-translate-y-0.5"
-          >
-            Admin
-          </Link>
-        )}
-        <Link
-          href="/organisateur"
-          className="rounded-full bg-gradient-to-r from-lueur to-lueur-fonce text-nuit font-semibold px-4 py-1.5 shadow-md transition hover:-translate-y-0.5"
-        >
-          {user ? "Mon espace" : "Espace organisateur"}
-        </Link>
-      </nav>
-
-      <div className="relative z-10 flex flex-col items-center max-w-md w-full">
-        <Reveal y={20}>
-          <PortraitGardien compact className="mb-4 mx-auto">
-            <GameLogo className="w-20 sm:w-24 h-auto drop-shadow-[0_8px_22px_rgba(8,16,40,0.7)]" />
-          </PortraitGardien>
-        </Reveal>
-        <SplitReveal
-          as="h1"
-          text="Escape Game"
-          className="font-headline text-2xl sm:text-3xl font-bold mb-2 tracking-wide text-nuit text-center"
-        />
-        <Reveal delay={0.2}>
-          <div className="filet-orne w-64 my-3">
-            <Runes className="h-3.5 w-auto text-acier" />
-          </div>
-        </Reveal>
-        <Reveal delay={0.3}>
-          <p className="font-codemono text-xs sm:text-sm text-acier-deep mb-10 text-center">
-            Choisissez votre jeu et entrez le code de votre organisateur
-          </p>
-        </Reveal>
-
-        {loading ? (
-          <p className="text-nuit/90 text-sm">Chargement...</p>
-        ) : jeux.length === 0 ? (
-          <p className="text-nuit/90 text-sm text-center">Aucun jeu disponible pour l&apos;instant.</p>
-        ) : (
-          <Reveal as="div" stagger staggerAmount={0.1} className="flex flex-col gap-3 w-full">
-            {jeux.map((j) => (
-              <button
-                key={j.id}
-                onClick={() => setJeuOuvert(j)}
-                className="cadre relative flex items-center justify-center rounded-2xl bg-dalle/95 ring-1 ring-acier/15 px-5 py-4 text-center font-semibold text-nuit transition-all duration-200 hover:ring-acier/40 hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <span className="px-8">{j.nom}</span>
-                <span className="absolute right-4 text-acier-deep text-lg" aria-hidden>
-                  🔒
-                </span>
-              </button>
-            ))}
-          </Reveal>
-        )}
-      </div>
-
-      <footer className="relative z-10 mt-12 text-center text-xs text-nuit/90 space-y-1">
-        <p>
-          Service client :{" "}
-          <a href="tel:+2250545177571" className="underline font-semibold">
-            +225 05 45 17 75 71
-          </a>{" "}
-          ·{" "}
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMERO}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline font-semibold"
-          >
-            WhatsApp
-          </a>
-        </p>
-        <p>
-          <Link href="/a-propos" className="underline">
-            À propos
-          </Link>{" "}
-          ·{" "}
-          <Link href="/tarifs" className="underline">
-            Tarifs
-          </Link>
-        </p>
-      </footer>
-
-      {jeuOuvert && <ModalCode jeu={jeuOuvert} onClose={() => setJeuOuvert(null)} />}
-    </main>
-  );
-}
-
-function ModalCode({ jeu, onClose }: { jeu: GameMeta; onClose: () => void }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [erreur, setErreur] = useState("");
-  const [verifying, setVerifying] = useState(false);
-  const [navigating, setNavigating] = useState(false);
-  const [bloqueJusqua, setBloqueJusqua] = useState<number | null>(() => {
-    const etat = lireVerrou(jeu.id);
-    return etat.bloqueJusqua;
-  });
+  const [verifie, setVerifie] = useState(false);
+  const [ouverture, setOuverture] = useState(false);
+  const [bloqueJusqua, setBloqueJusqua] = useState<number | null>(null);
   const [maintenant, setMaintenant] = useState(() => Date.now());
+
+  // Le verrou vit dans localStorage : on le lit après le montage pour que le
+  // rendu serveur et le premier rendu client restent identiques.
+  useEffect(() => {
+    const etat = lireVerrou();
+    if (etat.bloqueJusqua && etat.bloqueJusqua > Date.now()) setBloqueJusqua(etat.bloqueJusqua);
+  }, []);
 
   useEffect(() => {
     if (!bloqueJusqua) return;
@@ -180,70 +65,148 @@ function ModalCode({ jeu, onClose }: { jeu: GameMeta; onClose: () => void }) {
 
   const bloque = bloqueJusqua !== null && bloqueJusqua > maintenant;
 
-  async function valider() {
-    if (!code.trim() || verifying || bloque) return;
-    setVerifying(true);
+  async function rejoindre() {
+    if (!code.trim() || verifie || ouverture || bloque) return;
+    setVerifie(true);
     setErreur("");
     try {
-      const ok = await verifierCodeAcces(jeu.id, code);
-      if (ok) {
-        ecrireVerrou(jeu.id, { tentatives: 0, bloqueJusqua: null });
-        setNavigating(true);
-        router.push(`/g/${jeu.id}`);
+      const r = await trouverJeuParCode(code);
+      if (r.statut === "trouve") {
+        ecrireVerrou({ tentatives: 0, bloqueJusqua: null });
+        setOuverture(true);
+        router.push(`/g/${r.gameId}`);
         return;
       }
-      const etat = lireVerrou(jeu.id);
-      const tentatives = etat.tentatives + 1;
+      if (r.statut === "ambigu") {
+        setErreur("Ce code est partagé par plusieurs jeux. Demandez un nouveau code à votre organisateur.");
+        return;
+      }
+      const tentatives = lireVerrou().tentatives + 1;
       if (tentatives >= MAX_TENTATIVES) {
         const jusqua = Date.now() + BLOCAGE_MS;
-        ecrireVerrou(jeu.id, { tentatives: 0, bloqueJusqua: jusqua });
+        ecrireVerrou({ tentatives: 0, bloqueJusqua: jusqua });
+        setMaintenant(Date.now());
         setBloqueJusqua(jusqua);
         setErreur("Trop de tentatives. Réessayez dans une minute.");
       } else {
-        ecrireVerrou(jeu.id, { tentatives, bloqueJusqua: null });
+        ecrireVerrou({ tentatives, bloqueJusqua: null });
         setErreur("Code incorrect.");
       }
+    } catch {
+      setErreur("Connexion impossible. Vérifiez votre réseau et réessayez.");
     } finally {
-      setVerifying(false);
+      setVerifie(false);
     }
   }
 
-  if (navigating) return <LoadingScreen label="Ouverture de votre mission..." />;
+  const lienNav = "px-3 py-1.5 text-glace/80 hover:text-glace-pale transition-colors";
 
   return (
-    <div
-      className={`fixed inset-0 bg-black/60 flex items-center justify-center px-6 z-50`}
-      onClick={onClose}
-    >
+    <main className="relative min-h-screen flex flex-col overflow-hidden bg-abime text-glace-pale">
+      {/* Deux lumières qui se disputent la pièce */}
       <div
-        className="cadre bg-dalle rounded-2xl px-6 py-6 w-full max-w-xs"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="font-headline font-bold text-nuit mb-1">{jeu.nom}</h2>
-        <p className="text-xs text-nuit/90 mb-4">Entrez le code donné par votre organisateur.</p>
-        <input
-          autoFocus
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && valider()}
-          disabled={bloque}
-          placeholder="Code"
-          className="w-full bg-brume border border-acier/20 focus:border-acier rounded-lg px-4 py-2.5 text-sm text-nuit outline-none mb-3 disabled:opacity-50"
-        />
-        {erreur && <p className="text-red-400 text-xs mb-3">{erreur}</p>}
-        <div className="flex gap-2">
-          <button
-            onClick={valider}
-            disabled={!code.trim() || verifying || bloque}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-lueur to-lueur-fonce px-4 py-2.5 font-semibold text-nuit transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-40 disabled:translate-y-0"
+        aria-hidden
+        className="landing-souffle pointer-events-none absolute -bottom-48 -left-48 h-[34rem] w-[34rem] rounded-full bg-sang/40 blur-[120px]"
+      />
+      <div
+        aria-hidden
+        className="landing-souffle landing-souffle-2 pointer-events-none absolute -top-48 -right-48 h-[34rem] w-[34rem] rounded-full bg-glace/30 blur-[120px]"
+      />
+
+      <header className="relative z-10 flex items-center justify-between gap-3 px-5 py-4 sm:px-8">
+        <Link href="/" aria-label="ESCAPE GAME CI, accueil" className="flex items-center gap-2.5">
+          <EscapeLogo className="w-7" nom={false} />
+          <span className="hidden sm:inline font-headline text-xs font-semibold uppercase tracking-[0.3em] text-glace-pale">
+            Escape Game CI
+          </span>
+        </Link>
+        <nav className="flex items-center text-sm" aria-label="Navigation principale">
+          <Link href="/tarifs" className={lienNav}>
+            Tarifs
+          </Link>
+          <Link href="/a-propos" className={lienNav}>
+            À propos
+          </Link>
+        </nav>
+      </header>
+
+      <section className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-10 text-center">
+        <Reveal y={20}>
+          <EscapeLogo className="w-28 sm:w-36 drop-shadow-[0_0_30px_rgba(143,211,255,0.25)]" titre classeNom="text-lg sm:text-2xl" />
+        </Reveal>
+
+        <Reveal delay={0.25}>
+          <p className="mt-8 max-w-sm font-headline text-base sm:text-lg text-glace-pale/90 leading-relaxed">
+            Quelque chose vous attend.
+            <br />À vous de le trouver.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.4} className="mt-10 w-full max-w-xs">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              rejoindre();
+            }}
+            className="flex flex-col gap-3"
           >
-            {verifying ? "..." : "Valider"}
-          </button>
-          <button onClick={onClose} className="text-sm text-nuit/90 hover:text-nuit px-3">
-            Annuler
-          </button>
-        </div>
-      </div>
-    </div>
+            <label htmlFor="code-jeu" className="sr-only">
+              Code de votre organisateur
+            </label>
+            <input
+              id="code-jeu"
+              value={code}
+              onChange={(e) => {
+                setCode(e.target.value);
+                setErreur("");
+              }}
+              disabled={bloque || ouverture}
+              placeholder="Code de votre organisateur"
+              autoComplete="off"
+              autoCapitalize="characters"
+              className="w-full rounded-xl border border-glace/30 bg-white/5 px-4 py-3 text-center font-codemono text-sm tracking-widest text-glace-pale placeholder:tracking-normal placeholder:text-glace/50 outline-none transition focus:border-glace focus:shadow-[0_0_20px_-4px_rgba(143,211,255,0.6)] disabled:opacity-50"
+            />
+            <button type="submit" disabled={!code.trim() || verifie || ouverture || bloque} className="btn-sang px-6 py-3 text-sm">
+              {ouverture ? "Ouverture..." : verifie ? "..." : "Rejoindre"}
+            </button>
+            <p role="alert" className="min-h-5 text-sm text-sang-vif">
+              {erreur}
+            </p>
+          </form>
+        </Reveal>
+      </section>
+
+      <footer className="relative z-10 px-6 pb-8 pt-4 text-center text-xs text-glace/70 space-y-2">
+        <p>
+          <Link href="/tarifs" className="underline underline-offset-2 hover:text-glace-pale">
+            Tarifs
+          </Link>{" "}
+          ·{" "}
+          <Link href="/a-propos" className="underline underline-offset-2 hover:text-glace-pale">
+            À propos
+          </Link>
+        </p>
+        <p>
+          Service client :{" "}
+          <a href="tel:+2250545177571" className="underline underline-offset-2 hover:text-glace-pale">
+            +225 05 45 17 75 71
+          </a>{" "}
+          ·{" "}
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMERO}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-glace-pale"
+          >
+            WhatsApp
+          </a>
+        </p>
+        <p>
+          <Link href="/organisateur" className="text-glace/40 hover:text-glace/80 transition-colors">
+            Espace organisateur
+          </Link>
+        </p>
+      </footer>
+    </main>
   );
 }

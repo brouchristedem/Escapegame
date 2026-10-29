@@ -124,7 +124,41 @@ function genererCodeParDefaut(): string {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
+// Un code d'accès est tapé sur la page d'accueil (sans liste de jeux) : il
+// doit donc être unique sur tout le site. Les codes sont comparés sans tenir
+// compte de la casse ; on interroge les trois graphies usuelles car Firestore
+// compare en sensible à la casse (voir aussi trouverJeuParCode).
+function variantesCode(code: string): string[] {
+  const c = code.trim();
+  return Array.from(new Set([c, c.toLowerCase(), c.toUpperCase()])).filter(Boolean);
+}
+
+async function jeuxAvecCode(code: string): Promise<string[]> {
+  const variantes = variantesCode(code);
+  if (variantes.length === 0) return [];
+  const snap = await getDocs(query(collection(db, GAMES_COL), where("codeAcces", "in", variantes)));
+  return snap.docs.map((d) => d.id);
+}
+
+export const ERREUR_CODE_PRIS = "CODE_PRIS";
+
+// Cherche le jeu correspondant à un code saisi sur la page d'accueil.
+// "inconnu" = aucun jeu ; "ambigu" = plusieurs jeux anciens partagent ce code
+// (créés avant que l'unicité soit imposée) : l'organisateur doit en changer.
+export async function trouverJeuParCode(
+  codeSaisi: string
+): Promise<{ statut: "trouve"; gameId: string } | { statut: "inconnu" | "ambigu" }> {
+  const ids = await jeuxAvecCode(codeSaisi);
+  if (ids.length === 1) return { statut: "trouve", gameId: ids[0] };
+  return { statut: ids.length === 0 ? "inconnu" : "ambigu" };
+}
+
 export async function creerJeu(nom: string, uid: string): Promise<string> {
+  // Code à 4 chiffres libre sur tout le site (quelques essais suffisent).
+  let code = genererCodeParDefaut();
+  for (let essai = 0; essai < 10 && (await jeuxAvecCode(code)).length > 0; essai++) {
+    code = genererCodeParDefaut();
+  }
   const ref = await addDoc(collection(db, GAMES_COL), {
     nom: nom.trim() || "Jeu sans nom",
     organizers: [uid],
@@ -132,13 +166,19 @@ export async function creerJeu(nom: string, uid: string): Promise<string> {
     texts: {},
     gameStatus: "actif" as GameStatus,
     createdAt: Date.now(),
-    codeAcces: genererCodeParDefaut(),
+    codeAcces: code,
   });
   return ref.id;
 }
 
+// Refuse (erreur ERREUR_CODE_PRIS) un code déjà utilisé par un AUTRE jeu.
 export async function changerCodeAcces(gameId: string, code: string): Promise<void> {
-  await updateDoc(gameDoc(gameId), { codeAcces: code.trim() });
+  const propre = code.trim();
+  if (propre) {
+    const autres = (await jeuxAvecCode(propre)).filter((id) => id !== gameId);
+    if (autres.length > 0) throw new Error(ERREUR_CODE_PRIS);
+  }
+  await updateDoc(gameDoc(gameId), { codeAcces: propre });
 }
 
 export async function supprimerJeu(gameId: string): Promise<void> {
@@ -269,6 +309,8 @@ export async function getQuizConfig(gameId: string): Promise<QuizConfig> {
     broadcast: data.broadcast ?? null,
     personnalisation: data.personnalisation ?? null,
     inscriptionsOuvertes: data.inscriptionsOuvertes ?? false,
+    champsInscription: Array.isArray(data.champsInscription) ? data.champsInscription : [],
+    champMelangeId: data.champMelangeId ?? null,
     enigmeSurprise: data.enigmeSurprise ?? null,
     effets: data.effets ?? {},
   };
@@ -710,6 +752,10 @@ function versInscription(id: string, data: Record<string, unknown>): Inscription
     id,
     nom: String(data.nom ?? ""),
     niveau: String(data.niveau ?? ""),
+    reponses:
+      data.reponses && typeof data.reponses === "object"
+        ? Object.fromEntries(Object.entries(data.reponses as Record<string, unknown>).map(([k, v]) => [k, String(v ?? "")]))
+        : undefined,
     equipeId: typeof data.equipeId === "string" ? data.equipeId : null,
     equipeNom: typeof data.equipeNom === "string" ? data.equipeNom : null,
     createdAt: updatedAtEnMillis(data.createdAt),
@@ -731,8 +777,17 @@ export async function definirInscriptionsOuvertes(gameId: string, ouvertes: bool
 
 // Appelé par un participant (non authentifié). Les règles Firestore refusent
 // la création si les inscriptions sont fermées.
-export async function inscrire(gameId: string, nom: string, niveau: string): Promise<string> {
-  const ref = await addDoc(inscriptionsCol(gameId), { nom, niveau, createdAt: serverTimestamp() });
+// `niveau` porte la valeur du critère de mélange ("—" si aucun) ; `reponses`
+// les champs personnalisés, par id de champ (absent avec le formulaire par défaut).
+export async function inscrire(
+  gameId: string,
+  nom: string,
+  niveau: string,
+  reponses?: Record<string, string>
+): Promise<string> {
+  const donnees: Record<string, unknown> = { nom, niveau, createdAt: serverTimestamp() };
+  if (reponses && Object.keys(reponses).length > 0) donnees.reponses = reponses;
+  const ref = await addDoc(inscriptionsCol(gameId), donnees);
   return ref.id;
 }
 

@@ -21,6 +21,7 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
   const [navigating, setNavigating] = useState(false);
   const [erreurChef, setErreurChef] = useState(false);
   const continueRef = useRef<HTMLDivElement>(null);
+  const aucunDirect = useRef(false);
 
   useEffect(() => {
     Promise.all([getAllTeams(gameId), getQuizConfig(gameId)])
@@ -41,6 +42,24 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
       .finally(() => setLoading(false));
   }, [gameId]);
 
+  // Arrivée depuis la page d'inscription (« Je suis le chef d'équipe ») : le
+  // lien porte l'équipe du participant (?equipe=...). On l'ouvre directement,
+  // sans repasser par la liste de toutes les équipes. Si l'équipe n'existe
+  // plus, ou si un chef est déjà connecté, la liste s'affiche avec l'équipe
+  // présélectionnée (et le message d'erreur habituel).
+  useEffect(() => {
+    if (loading || aucunDirect.current) return;
+    aucunDirect.current = true;
+    let equipeId: string | null = null;
+    try {
+      equipeId = new URLSearchParams(window.location.search).get("equipe");
+    } catch {}
+    if (!equipeId || !teams.some((t) => t.id === equipeId)) return;
+    setSelected(equipeId);
+    if (!editMode) commencerMeneur(equipeId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, teams]);
+
   function selectionner(id: string) {
     setSelected(id);
     // Laisse le bouton de suite apparaître dans le DOM avant de défiler vers lui.
@@ -49,8 +68,8 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
     });
   }
 
-  async function commencerMeneur() {
-    if (!selected) return;
+  async function commencerMeneur(equipeId: string | null = selected) {
+    if (!equipeId) return;
     setErreurChef(false);
     setNavigating(true);
     // En mode édition, l'organisateur parcourt le circuit pour le modifier :
@@ -58,7 +77,7 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
     // ni déloger une vraie équipe en train de jouer).
     if (!editMode) {
       try {
-        const { ok } = await claimerChef(gameId, selected, getSessionId());
+        const { ok } = await claimerChef(gameId, equipeId, getSessionId());
         if (!ok) {
           setNavigating(false);
           setErreurChef(true);
@@ -69,7 +88,7 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
         // en mode hors-ligne si besoin (voir jouer/[teamId]/page.tsx).
       }
     }
-    setTimeout(() => router.push(`/g/${gameId}/jouer/${selected}`), 500);
+    setTimeout(() => router.push(`/g/${gameId}/jouer/${equipeId}`), 500);
   }
 
   async function saveText<K extends keyof GameTexts>(key: K, value: GameTexts[K]) {
@@ -137,7 +156,7 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
 
         <div ref={continueRef} className="flex flex-col items-center gap-3">
           <button
-            onClick={commencerMeneur}
+            onClick={() => commencerMeneur()}
             disabled={!selected && !editMode}
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-lueur to-lueur-fonce px-8 py-3.5 text-lg font-semibold text-nuit shadow-lg shadow-acier/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl disabled:translate-y-0 disabled:bg-none disabled:bg-brume-2 disabled:text-nuit/55 disabled:shadow-none disabled:cursor-not-allowed"
           >

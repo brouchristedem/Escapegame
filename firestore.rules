@@ -41,7 +41,13 @@ service cloud.firestore {
       // sont réservées aux organisateurs du jeu.
       match /inscriptions/{inscriptionId} {
         allow read: if true;
-        allow create: if request.resource.data.keys().hasOnly(['nom', 'niveau', 'createdAt'])
+        // 'reponses' : réponses aux champs personnalisés du formulaire
+        // d'inscription (au plus 8 champs). 'niveau' porte la valeur du
+        // critère de mélange (ou "—" si l'organisateur n'en a pas choisi).
+        allow create: if request.resource.data.keys().hasOnly(['nom', 'niveau', 'reponses', 'createdAt'])
+                      && (!('reponses' in request.resource.data)
+                          || (request.resource.data.reponses is map
+                              && request.resource.data.reponses.size() <= 8))
                       && request.resource.data.nom is string
                       && request.resource.data.nom.size() > 0
                       && request.resource.data.nom.size() <= 40

@@ -22,20 +22,20 @@ const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["500", "700"], var
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://escapegameci.vercel.app"),
-  title: "Escape Game",
+  title: "ESCAPE GAME CI",
   description: "Plateforme d'escape game personnalisable",
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    siteName: "Escape Game",
+    siteName: "ESCAPE GAME CI",
     url: "/",
-    title: "Escape Game · Énigmes en équipe",
+    title: "ESCAPE GAME CI · Énigmes en équipe",
     description: "Une plateforme d'escape game numérique : chaque équipe suit son parcours d'énigmes.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Escape Game" }],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "ESCAPE GAME CI" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Escape Game · Énigmes en équipe",
+    title: "ESCAPE GAME CI · Énigmes en équipe",
     description: "Une plateforme d'escape game numérique : chaque équipe suit son parcours d'énigmes.",
     images: ["/og-image.png"],
   },

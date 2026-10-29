@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { listerJeux, creerJeu, supprimerJeu, changerCodeAcces } from "@/lib/data";
+import { listerJeux, creerJeu, supprimerJeu, changerCodeAcces, ERREUR_CODE_PRIS } from "@/lib/data";
 import { GameMeta } from "@/lib/types";
 import { useAuth, estProprietaire } from "@/lib/auth";
 import GameLogo from "@/app/components/GameLogo";
@@ -126,14 +126,22 @@ function ListeJeux({ uid, email, titre }: { uid: string; email: string; titre: s
   const [editCodeId, setEditCodeId] = useState<string | null>(null);
   const [codeBrouillon, setCodeBrouillon] = useState("");
   const [savingCode, setSavingCode] = useState(false);
+  const [erreurCode, setErreurCode] = useState<string | null>(null);
 
   async function enregistrerCode(gameId: string) {
     if (!codeBrouillon.trim() || savingCode) return;
     setSavingCode(true);
+    setErreurCode(null);
     try {
       await changerCodeAcces(gameId, codeBrouillon);
       setEditCodeId(null);
       await reload();
+    } catch (e) {
+      setErreurCode(
+        e instanceof Error && e.message === ERREUR_CODE_PRIS
+          ? "Ce code est déjà utilisé par un autre jeu. Choisis-en un autre."
+          : "Impossible de changer le code. Vérifie ta connexion et réessaie."
+      );
     } finally {
       setSavingCode(false);
     }
@@ -252,6 +260,7 @@ function ListeJeux({ uid, email, titre }: { uid: string; email: string; titre: s
                       <button
                         onClick={() => {
                           setEditCodeId(j.id);
+                          setErreurCode(null);
                           setCodeBrouillon(j.codeAcces || "");
                         }}
                         className="text-xs text-nuit/90 hover:text-acier-deep"
@@ -261,6 +270,7 @@ function ListeJeux({ uid, email, titre }: { uid: string; email: string; titre: s
                     </>
                   )}
                 </div>
+                {editCodeId === j.id && erreurCode && <p className="text-xs text-alerte mt-1">{erreurCode}</p>}
               </div>
               <div className="flex items-center gap-4 shrink-0">
                 <Link href={`/organisateur/${j.id}`} className="text-sm font-semibold text-acier-deep">
