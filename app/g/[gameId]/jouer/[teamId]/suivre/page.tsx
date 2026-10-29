@@ -9,6 +9,7 @@ import EditableText from "@/app/components/EditableText";
 import RichText from "@/app/components/RichText";
 import GlobalOverlays from "@/app/components/GlobalOverlays";
 import EvenementsOverlay from "@/app/components/EvenementsOverlay";
+import { ACIER, ALERTE, couleurChrono } from "@/lib/chrono";
 
 export default function SuivreEquipe() {
   const params = useParams();
@@ -101,6 +102,8 @@ export default function SuivreEquipe() {
               className={`font-codemono font-semibold rounded-full px-2.5 py-0.5 transition-colors ${
                 state.timeLeft <= 5 ? "bg-alerte text-white animate-timer-critical" : "bg-dalle text-nuit"
               }`}
+              // Bleu acier tant que le temps est large, rouge sang sous 20 s.
+              style={state.timeLeft <= 5 ? undefined : { color: couleurChrono(state.timeLeft, 20, 5, ACIER, ALERTE) }}
             >
               {state.timeLeft}s
             </span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BroadcastMessage, TempsGeneral, TempsGeneralAjustement } from "@/lib/types";
+import { ACIER, ALERTE, GLACE, SANG_VIF, couleurChrono } from "@/lib/chrono";
 
 // Affiche, en haut de l'écran de jeu :
 // - le chrono général (commun à toutes les équipes), avec une notification
@@ -80,11 +81,18 @@ export default function GlobalOverlays({
     <div className="fixed top-0 inset-x-0 z-40 flex flex-col items-center gap-2 px-4 pt-3 pointer-events-none">
       {secondesRestantes !== null && (
         <span
-          className={`pointer-events-auto font-codemono font-semibold rounded-full px-4 py-1.5 shadow-md text-sm ${
-            secondesRestantes <= 60
-              ? "bg-alerte text-white animate-timer-critical"
-              : "bg-nuit text-lueur ring-1 ring-lueur/40"
+          className={`pointer-events-auto font-codemono font-semibold rounded-full px-4 py-1.5 shadow-md text-sm transition-colors ${
+            secondesRestantes <= 60 ? "bg-alerte text-white animate-timer-critical" : "bg-nuit"
           }`}
+          style={
+            secondesRestantes <= 60
+              ? undefined
+              : (() => {
+                  // Bleu glacial au calme, de plus en plus rouge sous 10 minutes.
+                  const c = couleurChrono(secondesRestantes, 600, 60, GLACE, SANG_VIF);
+                  return { color: c, boxShadow: `0 0 0 1px ${c}, 0 0 14px -2px ${c}` };
+                })()
+          }
         >
           ⏱️ {formatDuree(secondesRestantes)}
         </span>

@@ -47,6 +47,7 @@ import PauseOverlay from "@/app/components/PauseOverlay";
 import GlobalOverlays from "@/app/components/GlobalOverlays";
 import EvenementsOverlay from "@/app/components/EvenementsOverlay";
 import { useAdminMode, editModePersiste } from "@/lib/adminMode";
+import { ACIER, ALERTE, couleurChrono } from "@/lib/chrono";
 import { sauvegarderCache, lireCache, sauvegarderProgressionHorsLigne,
   effacerProgressionHorsLigne, lireProgressionHorsLigne } from "@/lib/offlineCache";
 
@@ -673,6 +674,8 @@ export default function JouerEquipe() {
               className={`font-codemono font-semibold rounded-full px-2.5 py-0.5 transition-colors ${
                 timeLeft <= 5 ? "bg-alerte text-white animate-timer-critical" : "bg-dalle text-nuit"
               }`}
+              // Bleu acier tant que le temps est large, rouge sang sous 20 s.
+              style={timeLeft <= 5 ? undefined : { color: couleurChrono(timeLeft, 20, 5, ACIER, ALERTE) }}
             >
               {timeLeft}s
             </span>

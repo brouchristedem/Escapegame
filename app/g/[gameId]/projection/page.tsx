@@ -13,6 +13,7 @@ import { classerEquipes, progression } from "@/lib/classement";
 import { LiveState, Team } from "@/lib/types";
 import GameLogo from "@/app/components/GameLogo";
 import LoadingScreen from "@/app/components/LoadingScreen";
+import { GLACE, SANG_VIF, couleurChrono } from "@/lib/chrono";
 
 function formaterDuree(totalSecondes: number): string {
   const s = Math.max(0, Math.round(totalSecondes));
@@ -97,6 +98,15 @@ export default function EcranProjection() {
                   ? "border-alerte bg-alerte text-white animate-timer-critical"
                   : "border-nuit bg-nuit text-lueur"
             }`}
+            // Bleu glacial au calme, de plus en plus rouge sous 15 minutes.
+            style={
+              secondesRestantes === 0 || critique
+                ? undefined
+                : (() => {
+                    const c = couleurChrono(secondesRestantes, 900, 300, GLACE, SANG_VIF);
+                    return { color: c, borderColor: c };
+                  })()
+            }
             aria-label="Temps restant"
           >
             {secondesRestantes === 0 ? "Temps écoulé" : formaterDuree(secondesRestantes)}
