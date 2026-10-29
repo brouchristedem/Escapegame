@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listerJeux, creerJeu, supprimerJeu, changerCodeAcces } from "@/lib/data";
 import { GameMeta } from "@/lib/types";
-import { useAuth } from "@/lib/auth";
+import { useAuth, estProprietaire } from "@/lib/auth";
 import GameLogo from "@/app/components/GameLogo";
 
 // Composant partagé entre /organisateur (ouvert à tout organisateur) et
@@ -23,7 +23,7 @@ export default function EspaceOrganisateur({
   if (loading) return <main className="min-h-screen bg-white" />;
   if (!user) return <ConnexionOrganisateur titre={titre} />;
 
-  if (restrictedEmail && user.email !== restrictedEmail) {
+  if (restrictedEmail && user.email?.toLowerCase() !== restrictedEmail.toLowerCase()) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-white text-center">
         <p className="text-nuit font-semibold mb-2">Accès réservé.</p>
@@ -178,9 +178,16 @@ function ListeJeux({ uid, email, titre }: { uid: string; email: string; titre: s
           <GameLogo className="h-10 w-10 shrink-0" />
           <h1 className="font-headline text-2xl font-extrabold text-nuit">{titre}</h1>
         </div>
-        <button onClick={() => signOut()} className="text-xs text-nuit/90 hover:text-nuit/90">
-          Déconnexion ({email})
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          {estProprietaire(email) && titre !== "Administration" && (
+            <Link href="/admin" className="rounded-full bg-nuit text-brume text-xs font-semibold px-3 py-1">
+              Admin
+            </Link>
+          )}
+          <button onClick={() => signOut()} className="text-xs text-nuit/90 hover:text-nuit/90">
+            Déconnexion ({email})
+          </button>
+        </div>
       </div>
       <p className="text-sm text-nuit/90 mb-8">
         La racine du site liste désormais tous les jeux publiquement, chacun verrouillé par un code. Donnez le code

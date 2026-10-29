@@ -18,6 +18,12 @@ import { auth } from "./firebase";
 // voit que ses propres jeux, filtrés par uid — voir lib/data.ts).
 export const OWNER_EMAIL = "brouchristedem@gmail.com";
 
+// Vrai si l'e-mail est celui du propriétaire (insensible à la casse). Sert
+// uniquement à l'affichage : l'autorisation réelle reste dans firestore.rules.
+export function estProprietaire(email: string | null | undefined): boolean {
+  return !!email && email.trim().toLowerCase() === OWNER_EMAIL;
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean; // true tant qu'on ne sait pas encore si quelqu'un est connecté

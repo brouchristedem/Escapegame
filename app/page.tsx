@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth, estProprietaire } from "@/lib/auth";
+import { WHATSAPP_NUMERO } from "@/app/components/TarifsCards";
 import { listerJeuxPublics, verifierCodeAcces } from "@/lib/data";
 import { GameMeta } from "@/lib/types";
 import GameLogo from "@/app/components/GameLogo";
@@ -46,6 +49,8 @@ export default function Accueil() {
   const [loading, setLoading] = useState(true);
   const [jeuOuvert, setJeuOuvert] = useState<GameMeta | null>(null);
 
+  const { user } = useAuth();
+
   useEffect(() => {
     listerJeuxPublics()
       .then(setJeux)
@@ -58,6 +63,26 @@ export default function Accueil() {
     >
       <Parallax speed={-60} className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-lueur/30 blur-3xl" />
       <Parallax speed={70} className="pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-lueur/25 blur-3xl" />
+
+      <nav className="relative z-10 w-full max-w-md flex flex-wrap items-center justify-end gap-2 -mt-8 mb-6 text-sm">
+        <Link href="/a-propos" className="px-3 py-1.5 text-nuit/90 hover:text-acier-deep underline">
+          À propos
+        </Link>
+        {user && estProprietaire(user.email) && (
+          <Link
+            href="/admin"
+            className="rounded-full bg-nuit text-brume font-semibold px-4 py-1.5 shadow-md transition hover:-translate-y-0.5"
+          >
+            Admin
+          </Link>
+        )}
+        <Link
+          href="/organisateur"
+          className="rounded-full bg-gradient-to-r from-lueur to-lueur-fonce text-nuit font-semibold px-4 py-1.5 shadow-md transition hover:-translate-y-0.5"
+        >
+          {user ? "Mon espace" : "Espace organisateur"}
+        </Link>
+      </nav>
 
       <div className="relative z-10 flex flex-col items-center max-w-md w-full">
         <Reveal y={20}>
@@ -102,6 +127,33 @@ export default function Accueil() {
           </Reveal>
         )}
       </div>
+
+      <footer className="relative z-10 mt-12 text-center text-xs text-nuit/90 space-y-1">
+        <p>
+          Service client :{" "}
+          <a href="tel:+2250545177571" className="underline font-semibold">
+            +225 05 45 17 75 71
+          </a>{" "}
+          ·{" "}
+          <a
+            href={`https://wa.me/${WHATSAPP_NUMERO}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline font-semibold"
+          >
+            WhatsApp
+          </a>
+        </p>
+        <p>
+          <Link href="/a-propos" className="underline">
+            À propos
+          </Link>{" "}
+          ·{" "}
+          <Link href="/tarifs" className="underline">
+            Tarifs
+          </Link>
+        </p>
+      </footer>
 
       {jeuOuvert && <ModalCode jeu={jeuOuvert} onClose={() => setJeuOuvert(null)} />}
     </main>

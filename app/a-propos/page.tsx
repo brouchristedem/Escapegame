@@ -1,7 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import fs from "fs";
-import path from "path";
 import { WHATSAPP_NUMERO } from "@/app/components/TarifsCards";
 import GameLogo from "@/app/components/GameLogo";
 import Reveal from "@/app/components/gsap/Reveal";
@@ -9,31 +7,18 @@ import SplitReveal from "@/app/components/gsap/SplitReveal";
 import Parallax from "@/app/components/gsap/Parallax";
 
 
-// Photo facultative : dépose un fichier à public/team/christ-edem.jpg (ou .png)
-// et il remplacera automatiquement l'avatar par défaut ci-dessous, sans
-// toucher au code. Formats acceptés, dans cet ordre de préférence :
-const PHOTO_CANDIDATS = ["christ-edem.jpg", "christ-edem.jpeg", "christ-edem.png", "christ-edem.webp"];
-
-function trouverPhoto(): string | null {
-  for (const nom of PHOTO_CANDIDATS) {
-    if (fs.existsSync(path.join(process.cwd(), "public", "team", nom))) {
-      return `/team/${nom}`;
-    }
-  }
-  return null;
-}
+const PORTFOLIO_URL = "https://christedem.vercel.app";
 
 export default async function AProposDuDeveloppeur({
   searchParams,
 }: {
   searchParams: Promise<{ jeu?: string }>;
 }) {
-  const photo = trouverPhoto();
   // Si on arrive depuis la page de jeu (lien avec ?jeu=<gameId>), le retour
   // doit ramener à l'accueil du jeu, jamais à l'espace organisateur : un
   // joueur ne doit pas voir/pouvoir accéder à cet espace depuis cette page.
   const { jeu } = await searchParams;
-  const retourHref = jeu ? `/g/${jeu}` : "/organisateur";
+  const retourHref = jeu ? `/g/${jeu}` : "/";
 
   return (
     <main className={`relative min-h-screen bg-brume px-6 py-12 overflow-hidden`}>
@@ -51,22 +36,14 @@ export default async function AProposDuDeveloppeur({
           </Reveal>
 
           <Reveal>
-            {photo ? (
-              <div className="relative w-44 sm:w-52 rounded-2xl overflow-hidden ring-4 ring-acier/30 shadow-[0_18px_40px_-14px_rgba(8,16,40,0.45)]">
-                <Image
-                  src={photo}
-                  alt="Christ Edem BROU"
-                  width={480}
-                  height={720}
-                  className="w-full h-auto"
-                  priority
-                />
-              </div>
-            ) : (
-              <div className="w-32 h-32 rounded-full bg-brume-2 flex items-center justify-center ring-4 ring-acier/30">
-                <span className="font-headline text-3xl font-extrabold text-acier">CE</span>
-              </div>
-            )}
+            <Image
+              src="/edem.jpg"
+              alt="Christ Edem"
+              width={400}
+              height={400}
+              className="w-40 h-40 rounded-full object-cover ring-4 ring-acier/30 shadow-[0_18px_40px_-14px_rgba(8,16,40,0.45)]"
+              priority
+            />
           </Reveal>
 
           <SplitReveal
@@ -77,8 +54,9 @@ export default async function AProposDuDeveloppeur({
           />
           <Reveal delay={0.2}>
             <p className="text-acier font-medium text-sm mt-1">
-              Développeur web, applications &amp; plateformes SaaS · Entrepreneur
+              Étudiant en Licence 3 Logistique à Abidjan
             </p>
+            <p className="text-nuit/80 text-sm mt-1">Développeur web, applications &amp; plateformes SaaS · Entrepreneur</p>
           </Reveal>
         </div>
 
@@ -118,8 +96,7 @@ export default async function AProposDuDeveloppeur({
               MON CV PRO CI
             </a>
             , une application web SaaS permettant de créer des CV professionnels (15 modèles) avec aperçu en
-            temps réel, export PDF et paiement mobile (Wave), déployée en production et utilisée par des
-            clients réels en Côte d&apos;Ivoire.
+            temps réel, export PDF et paiement mobile (Wave), déployée en production.
           </p>
         </Reveal>
 
@@ -130,9 +107,24 @@ export default async function AProposDuDeveloppeur({
             rel="noopener noreferrer"
             className="bg-gradient-to-r from-lueur to-lueur-fonce text-nuit font-semibold text-sm px-5 py-2.5 rounded-full shadow-md shadow-acier/20 transition hover:-translate-y-0.5"
           >
-            Me contacter
+            WhatsApp
+          </a>
+          <a
+            href="tel:+2250545177571"
+            className="bg-dalle ring-1 ring-acier/30 text-nuit font-semibold text-sm px-5 py-2.5 rounded-full shadow-md transition hover:-translate-y-0.5"
+          >
+            Appeler
+          </a>
+          <a
+            href={PORTFOLIO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-dalle ring-1 ring-acier/30 text-nuit font-semibold text-sm px-5 py-2.5 rounded-full shadow-md transition hover:-translate-y-0.5"
+          >
+            Mon portfolio
           </a>
         </Reveal>
+        <p className="relative z-10 mt-8 text-center text-xs text-nuit/80">Un site Edem Digital Group</p>
       </div>
     </main>
   );
