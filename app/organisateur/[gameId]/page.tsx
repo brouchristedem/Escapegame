@@ -21,6 +21,7 @@ import {
   ajusterTempsGeneral,
   envoyerBroadcast,
   uploadImageEnigme,
+  definirEffetsHorror,
 } from "@/lib/data";
 import {
   Question,
@@ -162,6 +163,11 @@ function AdminPanel({ gameId }: { gameId: string }) {
   const [gameStatus, setGameStatus] = useState<GameStatus>("actif");
   const [togglingStatus, setTogglingStatus] = useState(false);
 
+  // Effets effrayants sur mauvaise réponse (sang, sons, cooldown) : interrupteur
+  // pour toutes les équipes, appliqué en direct chez les joueurs.
+  const [effetsHorror, setEffetsHorror] = useState(true);
+  const [togglingEffets, setTogglingEffets] = useState(false);
+
   // Chrono général affiché chez toutes les équipes, ajustable en temps réel.
   const [tempsGeneral, setTempsGeneral] = useState<TempsGeneral>({ finTimestamp: null });
   const [dureeDepart, setDureeDepart] = useState<string>("30");
@@ -188,6 +194,7 @@ function AdminPanel({ gameId }: { gameId: string }) {
       setHistoire(config.histoire ?? "");
       setSiteTexts(fusionnerTextes(config.texts));
       setGameStatus(config.gameStatus ?? "actif");
+      setEffetsHorror(config.effetsHorror ?? true);
       setTempsGeneral(config.tempsGeneral ?? { finTimestamp: null });
     } catch (e) {
       console.error(e);
@@ -484,6 +491,19 @@ function AdminPanel({ gameId }: { gameId: string }) {
     }
   }
 
+  async function togglerEffetsHorror() {
+    const prochain = !effetsHorror;
+    setTogglingEffets(true);
+    try {
+      await definirEffetsHorror(gameId, prochain);
+      setEffetsHorror(prochain);
+    } catch (e) {
+      alert("Échec : " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setTogglingEffets(false);
+    }
+  }
+
   // ---------- Chrono général (commun à toutes les équipes) ----------
 
   async function lancerTempsGeneral() {
@@ -636,6 +656,28 @@ function AdminPanel({ gameId }: { gameId: string }) {
           }`}
         >
           {gameStatus === "pause" ? "Reprendre le jeu" : "Mettre en pause"}
+        </button>
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4 ring-2 ring-acier/20 bg-acier/5">
+        <div className="max-w-xl">
+          <p className="font-semibold text-nuit">
+            🩸 Effets effrayants : {effetsHorror ? "activés" : "désactivés"} pour toutes les équipes
+          </p>
+          <p className="text-xs text-nuit/90 mt-0.5">
+            Sang qui coule, cris, vibrations et écran qui tremble à chaque mauvaise réponse, de plus en plus fort, avec un
+            court temps d&apos;attente avant de réessayer. Désactivés : plus aucun effet ni attente, chez tout le monde,
+            immédiatement. Quand ils sont activés, chaque joueur peut quand même les couper sur son téléphone.
+          </p>
+        </div>
+        <button
+          onClick={togglerEffetsHorror}
+          disabled={togglingEffets}
+          className={`rounded-full px-6 py-2.5 font-semibold shadow-md transition disabled:opacity-60 ${
+            effetsHorror ? "bg-white ring-1 ring-acier/30 text-nuit" : "bg-lueur text-nuit"
+          }`}
+        >
+          {effetsHorror ? "Désactiver pour tous" : "Activer pour tous"}
         </button>
       </div>
 

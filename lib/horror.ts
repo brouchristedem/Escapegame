@@ -13,6 +13,9 @@ export const DUREE_EFFET_MS = 1500;
 export const COOLDOWN_APRES_ERREURS = 3;
 export const COOLDOWN_SECONDES = 3;
 export const MESSAGE_COOLDOWN = "Il approche…";
+// Même attente pour tout le monde (le classement départage les équipes à
+// l'heure d'arrivée), mais sans le texte effrayant pour qui a coupé les effets.
+export const MESSAGE_COOLDOWN_NEUTRE = "Patiente…";
 
 // Erreurs 1-2 : petit effet · 3-4 : medium · 5 : full horror · 6+ : au hasard
 // entre medium et full horror, pour que ça reste une surprise.

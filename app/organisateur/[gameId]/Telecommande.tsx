@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import {
   ajusterTempsGeneral,
   arreterTempsGeneral,
+  definirEffetsHorror,
   demarrerTempsGeneral,
   ecouterGameStatus,
   ecouterLiveState,
@@ -60,6 +61,7 @@ export default function Telecommande({
 }) {
   const [statut, setStatut] = useState<GameStatus>("actif");
   const [finChrono, setFinChrono] = useState<number | null>(null);
+  const [effetsHorror, setEffetsHorror] = useState(true);
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [states, setStates] = useState<Record<string, LiveState | null>>({});
   const [occupe, setOccupe] = useState(false);
@@ -69,7 +71,14 @@ export default function Telecommande({
   const [messageEnvoye, setMessageEnvoye] = useState(false);
 
   useEffect(() => ecouterGameStatus(gameId, setStatut), [gameId]);
-  useEffect(() => ecouterTempsEtBroadcast(gameId, (v) => setFinChrono(v.tempsGeneral.finTimestamp)), [gameId]);
+  useEffect(
+    () =>
+      ecouterTempsEtBroadcast(gameId, (v) => {
+        setFinChrono(v.tempsGeneral.finTimestamp);
+        setEffetsHorror(v.effetsHorror);
+      }),
+    [gameId]
+  );
 
   const cleEquipes = teams.map((t) => t.id).join(",");
   useEffect(() => {
@@ -140,6 +149,22 @@ export default function Telecommande({
           className={`${gros} w-full text-white ${enPause ? "bg-green-600" : "bg-red-600"}`}
         >
           {enPause ? "Reprendre le jeu" : "Mettre en pause"}
+        </button>
+      </div>
+
+      <div className="rounded-2xl p-4 ring-2 ring-acier/20 bg-acier/5">
+        <p className="font-semibold text-nuit mb-1">🩸 Effets effrayants</p>
+        <p className="text-sm text-nuit/90 mb-3">
+          {effetsHorror
+            ? "Activés chez toutes les équipes (chaque joueur peut aussi les couper sur son téléphone)."
+            : "Désactivés chez toutes les équipes : aucun effet, aucune attente."}
+        </p>
+        <button
+          onClick={() => agir(() => definirEffetsHorror(gameId, !effetsHorror))}
+          disabled={occupe}
+          className={`${gros} w-full ${effetsHorror ? "bg-white ring-1 ring-acier/30 text-nuit" : "bg-lueur text-nuit"}`}
+        >
+          {effetsHorror ? "Désactiver pour tous" : "Activer pour tous"}
         </button>
       </div>
 

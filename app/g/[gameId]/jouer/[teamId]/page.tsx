@@ -47,6 +47,7 @@ import PauseOverlay from "@/app/components/PauseOverlay";
 import GlobalOverlays from "@/app/components/GlobalOverlays";
 import EvenementsOverlay from "@/app/components/EvenementsOverlay";
 import EffetHorror from "@/app/components/EffetHorror";
+import EffetsHorrorInfo from "@/app/components/EffetsHorrorInfo";
 import {
   niveauPourErreurs,
   lireEffetsActifs,
@@ -55,6 +56,7 @@ import {
   COOLDOWN_APRES_ERREURS,
   COOLDOWN_SECONDES,
   MESSAGE_COOLDOWN,
+  MESSAGE_COOLDOWN_NEUTRE,
   type NiveauHorror,
 } from "@/lib/horror";
 import { useAdminMode, editModePersiste } from "@/lib/adminMode";
@@ -129,19 +131,25 @@ export default function JouerEquipe() {
   // avec les erreurs d'affilée sur la même étape. Le compteur est une ref car le
   // setInterval du chrono garde la fonction handleTimeout du rendu où il a été
   // créé : un state y serait périmé.
+  // effetsGlobaux = interrupteur de l'organisateur (pour toute la partie, lu en
+  // direct) ; effetsActifs = choix de ce joueur sur son appareil.
+  const [effetsGlobaux, setEffetsGlobaux] = useState(true);
   const [effetsActifs, setEffetsActifs] = useState(lireEffetsActifs);
+  const [infoEffetsOuverte, setInfoEffetsOuverte] = useState(false);
   const [effet, setEffet] = useState<{ id: number; niveau: NiveauHorror } | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const erreursSuiteRef = useRef(0);
   const effetSeqRef = useRef(0);
   // Toujours la dernière version de handleTimeout (déclarée plus bas) pour le chrono.
   const handleTimeoutRef = useRef<() => void>(() => {});
+  const effetsGlobauxRef = useRef(effetsGlobaux);
   const effetsActifsRef = useRef(effetsActifs);
   const editModeRef = useRef(editMode);
   useEffect(() => {
+    effetsGlobauxRef.current = effetsGlobaux;
     effetsActifsRef.current = effetsActifs;
     editModeRef.current = editMode;
-  }, [effetsActifs, editMode]);
+  }, [effetsGlobaux, effetsActifs, editMode]);
 
   // Sur mobile le son ne démarre qu'après une interaction : on le débloque au
   // premier tap / clic / touche, bien avant la première mauvaise réponse.
@@ -164,10 +172,15 @@ export default function JouerEquipe() {
 
   function declencherErreur() {
     erreursSuiteRef.current += 1;
-    if (!effetsActifsRef.current || editModeRef.current) return;
+    if (!effetsGlobauxRef.current || editModeRef.current) return;
     const n = erreursSuiteRef.current;
-    effetSeqRef.current += 1;
-    setEffet({ id: effetSeqRef.current, niveau: niveauPourErreurs(n) });
+    // Sang, son, vibration : seulement si ce joueur ne les a pas coupés.
+    if (effetsActifsRef.current) {
+      effetSeqRef.current += 1;
+      setEffet({ id: effetSeqRef.current, niveau: niveauPourErreurs(n) });
+    }
+    // Le cooldown reste pour tout le monde (le classement départage les équipes
+    // à l'heure d'arrivée) ; seul l'organisateur peut le couper, pour tous.
     if (n >= COOLDOWN_APRES_ERREURS) setCooldown(COOLDOWN_SECONDES);
   }
 
@@ -181,10 +194,8 @@ export default function JouerEquipe() {
     const suivant = !effetsActifs;
     setEffetsActifs(suivant);
     sauverEffetsActifs(suivant);
-    if (!suivant) {
-      setEffet(null);
-      setCooldown(0);
-    }
+    if (!suivant) setEffet(null);
+    setInfoEffetsOuverte(false);
   }
 
   // Écoute en temps réel le bouton pause d'urgence de l'organisateur : bloque
@@ -205,6 +216,14 @@ export default function JouerEquipe() {
       setTempsGeneral(v.tempsGeneral);
       setTempsGeneralAjustement(v.tempsGeneralAjustement);
       setBroadcast(v.broadcast);
+      // Interrupteur « effets effrayants » de l'organisateur, appliqué en direct :
+      // coupé = on retire tout de suite l'effet et l'attente en cours.
+      setEffetsGlobaux(v.effetsHorror);
+      if (!v.effetsHorror) {
+        setEffet(null);
+        setCooldown(0);
+        setInfoEffetsOuverte(false);
+      }
     });
     return unsub;
   }, [editMode, horsLigne, gameId]);
@@ -265,6 +284,7 @@ export default function JouerEquipe() {
           getAllQuestions(gameId!),
         ]);
         setTexts(fusionnerTextes(config.texts));
+        setEffetsGlobaux(config.effetsHorror ?? true);
         if (qs.length === 0) {
           setErreurDetail(`Aucune énigme trouvée pour la salle "${t.salle}".`);
           setPhase("error");
@@ -329,6 +349,7 @@ export default function JouerEquipe() {
         setHorsLigne(true);
         setTeam(equipe);
         setTexts(fusionnerTextes(cache.config.texts));
+        setEffetsGlobaux(cache.config.effetsHorror ?? true);
         const qs = cache.questionsParSalle[equipe.salle] ?? [];
         if (qs.length === 0) {
           setErreurDetail("Aucune énigme en cache pour cette équipe.");
@@ -735,6 +756,13 @@ export default function JouerEquipe() {
           onFin={() => setEffet((e) => (e && e.id === effet.id ? null : e))}
         />
       )}
+      {infoEffetsOuverte && effetsGlobaux && (
+        <EffetsHorrorInfo
+          actifs={effetsActifs}
+          onChanger={basculerEffets}
+          onFermer={() => setInfoEffetsOuverte(false)}
+        />
+      )}
       {gameStatus === "pause" && !editMode && (
         <PauseOverlay titre={texts.pauseTitre} message={texts.pauseMessage} />
       )}
@@ -1038,7 +1066,7 @@ export default function JouerEquipe() {
         >
           {enCooldown ? (
             <span className="animate-glitch-flicker">
-              {MESSAGE_COOLDOWN} {cooldown}
+              {effetsActifs ? MESSAGE_COOLDOWN : MESSAGE_COOLDOWN_NEUTRE} {cooldown}
             </span>
           ) : (
             <EditableText as="span" value={texts.jeuLabelReessayer} onSave={(v) => saveGlobalText("jeuLabelReessayer", v)} className="text-nuit" />
@@ -1056,10 +1084,10 @@ export default function JouerEquipe() {
         </button>
       )}
 
-      {!editMode && (
+      {!editMode && effetsGlobaux && (
         <button
           type="button"
-          onClick={basculerEffets}
+          onClick={() => setInfoEffetsOuverte(true)}
           className="mt-10 self-center text-xs text-nuit/55 underline underline-offset-2"
         >
           {effetsActifs ? "🩸 Effets effrayants : activés" : "Effets effrayants : désactivés"}

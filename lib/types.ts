@@ -195,6 +195,9 @@ export interface QuizConfig {
   champMelangeId?: string | null;
   enigmeSurprise?: EnigmeSurprise | null; // null/absent = aucun événement en cours
   effets?: Record<string, EffetEquipe | null>; // par id d'équipe ; null = effet retiré
+  // Effets effrayants sur mauvaise réponse (sang, sons, vibrations, cooldown),
+  // interrupteur de l'organisateur pour toutes les équipes. Absent = activés.
+  effetsHorror?: boolean;
 }
 
 // Résumé d'un jeu affiché dans la liste des jeux de l'organisateur

@@ -313,6 +313,7 @@ export async function getQuizConfig(gameId: string): Promise<QuizConfig> {
     champMelangeId: data.champMelangeId ?? null,
     enigmeSurprise: data.enigmeSurprise ?? null,
     effets: data.effets ?? {},
+    effetsHorror: data.effetsHorror ?? true,
   };
 }
 
@@ -339,7 +340,12 @@ export function ecouterGameStatus(gameId: string, callback: (status: GameStatus)
 // Firestore en temps réel sur les pages de jeu.
 export function ecouterTempsEtBroadcast(
   gameId: string,
-  callback: (v: { tempsGeneral: TempsGeneral; tempsGeneralAjustement: TempsGeneralAjustement | null; broadcast: BroadcastMessage | null }) => void
+  callback: (v: {
+    tempsGeneral: TempsGeneral;
+    tempsGeneralAjustement: TempsGeneralAjustement | null;
+    broadcast: BroadcastMessage | null;
+    effetsHorror: boolean;
+  }) => void
 ): () => void {
   return onSnapshot(gameDoc(gameId), (snap) => {
     const data = snap.exists() ? (snap.data() as QuizConfig) : null;
@@ -347,8 +353,17 @@ export function ecouterTempsEtBroadcast(
       tempsGeneral: data?.tempsGeneral ?? { finTimestamp: null },
       tempsGeneralAjustement: data?.tempsGeneralAjustement ?? null,
       broadcast: data?.broadcast ?? null,
+      // Interrupteur « effets effrayants » de l'organisateur (activés par défaut).
+      effetsHorror: data?.effetsHorror ?? true,
     });
   });
+}
+
+// Active/désactive les effets effrayants (sang, sons, cooldown) chez toutes
+// les équipes, en direct. L'écriture est réservée aux organisateurs (règles
+// Firestore sur le document du jeu).
+export async function definirEffetsHorror(gameId: string, actifs: boolean): Promise<void> {
+  await saveQuizConfig(gameId, { effetsHorror: actifs });
 }
 
 // Démarre (ou remplace) le chrono général pour toutes les équipes.
