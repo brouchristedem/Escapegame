@@ -107,11 +107,11 @@ export default function Accueil() {
       {/* Deux lumières qui se disputent la pièce */}
       <div
         aria-hidden
-        className="landing-souffle pointer-events-none absolute -bottom-48 -left-48 h-[34rem] w-[34rem] rounded-full bg-sang/40 blur-[120px]"
+        className="landing-souffle pointer-events-none absolute -bottom-48 -left-48 h-[34rem] w-[34rem] rounded-full bg-sang/40 md:bg-sang/20 blur-[120px]"
       />
       <div
         aria-hidden
-        className="landing-souffle landing-souffle-2 pointer-events-none absolute -top-48 -right-48 h-[34rem] w-[34rem] rounded-full bg-glace/30 blur-[120px]"
+        className="landing-souffle landing-souffle-2 pointer-events-none absolute -top-48 -right-48 h-[34rem] w-[34rem] rounded-full bg-glace/30 md:bg-glace/12 blur-[120px]"
       />
 
       <header className="relative z-10 flex items-center justify-between gap-3 px-5 py-4 sm:px-8">
