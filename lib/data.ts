@@ -33,6 +33,9 @@ import {
   EffetEquipe,
   BonneReponseSurprise,
   Inscription,
+  EffetsHorreur,
+  EffetsHorreurPartiel,
+  fusionnerEffetsHorreur,
 } from "./types";
 
 // --- Structure multi-tenant ---
@@ -723,6 +726,33 @@ export async function appliquerEffetToutesEquipes(
 
 export async function retirerEffetEquipe(gameId: string, teamId: string): Promise<void> {
   await saveQuizConfig(gameId, { effets: { [teamId]: null } });
+}
+
+// --- Effets d'horreur (jumpscare, interface possédée) ---
+// Un seul abonnement sur le document du jeu, pour l'admin comme pour les
+// écrans joueur : l'interrupteur de l'organisateur agit en direct.
+export function ecouterEffetsHorreur(gameId: string, callback: (effets: EffetsHorreur) => void): () => void {
+  return onSnapshot(gameDoc(gameId), (snap) => {
+    const data = snap.exists() ? (snap.data() as QuizConfig) : null;
+    callback(fusionnerEffetsHorreur(data?.effetsHorreur));
+  });
+}
+
+// Écriture par morceaux : saveQuizConfig fusionne (merge: true) jusque dans
+// les sous-objets, donc changer un réglage ne touche pas aux autres.
+export async function definirEffetsHorreur(gameId: string, partiel: EffetsHorreurPartiel): Promise<void> {
+  await saveQuizConfig(gameId, { effetsHorreur: partiel });
+}
+
+// Déclenche un jumpscare tout de suite chez tous les joueurs connectés, même
+// si les apparitions aléatoires ne sont pas armées.
+export async function declencherJumpscare(gameId: string): Promise<void> {
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  await definirEffetsHorreur(gameId, { jumpscare: { declenche: { id, at: Date.now() } } });
+}
+
+export async function toutDesactiverEffetsHorreur(gameId: string): Promise<void> {
+  await definirEffetsHorreur(gameId, { jumpscare: { actif: false }, possede: { actif: false } });
 }
 
 // --- Réinitialisation des statistiques ---

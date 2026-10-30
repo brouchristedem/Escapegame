@@ -193,6 +193,69 @@ function cri(c: AudioContext, dest: AudioNode, t0: number): void {
   thump(c, dest, t0, 62, 0.9);
 }
 
+// Métal lacéré : bruit blanc passé dans un filtre très résonant qui monte en
+// fréquence (le grincement), haché par un trémolo rapide, avec deux notes
+// aiguës qui frottent l'une contre l'autre (seconde mineure, très dissonante).
+function metalLacere(c: AudioContext, dest: AudioNode, t0: number, duree: number): void {
+  const source = bruit(c, duree);
+  const filtre = c.createBiquadFilter();
+  filtre.type = "bandpass";
+  filtre.Q.value = 9;
+  filtre.frequency.setValueAtTime(650, t0);
+  filtre.frequency.exponentialRampToValueAtTime(5200, t0 + duree * 0.9);
+
+  // Étage « hachage » (autour de 0,55, modulé de ±0,45 par le trémolo) puis
+  // étage « enveloppe » : le hachage s'éteint avec l'enveloppe au lieu de
+  // continuer à sonner jusqu'à la fin du tampon.
+  const hachage = c.createGain();
+  hachage.gain.value = 0.55;
+  const tremolo = c.createOscillator();
+  const profondeur = c.createGain();
+  tremolo.frequency.value = 27;
+  profondeur.gain.value = 0.45;
+  tremolo.connect(profondeur);
+  profondeur.connect(hachage.gain);
+
+  const g = c.createGain();
+  enveloppe(g, t0, 0.04, 0.9, duree);
+
+  source.connect(filtre);
+  filtre.connect(hachage);
+  hachage.connect(g);
+  g.connect(dest);
+  source.start(t0);
+  source.stop(t0 + duree);
+  tremolo.start(t0);
+  tremolo.stop(t0 + duree);
+
+  for (const f of [1318, 1397]) {
+    const o = c.createOscillator();
+    const go = c.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(f, t0);
+    o.frequency.exponentialRampToValueAtTime(f * 1.5, t0 + duree * 0.8);
+    enveloppe(go, t0, 0.05, 0.16, duree * 0.85);
+    o.connect(go);
+    go.connect(dest);
+    o.start(t0);
+    o.stop(t0 + duree);
+  }
+}
+
+// Jumpscare piloté par l'organisateur : le métal qui racle, un choc grave, puis
+// un cri strident par-dessus. Même sortie plafonnée + compresseur que les autres
+// sons : le cri est violent pour les nerfs, jamais pour les oreilles.
+export function jouerSonJumpscare(): void {
+  const c = getContexte();
+  // Contexte encore bloqué (aucune interaction avant) : on reste silencieux.
+  if (!c || c.state !== "running") return;
+  const t0 = c.currentTime + 0.01;
+  const dest = sortie(c, 0.6);
+  metalLacere(c, dest, t0, 1.4);
+  thump(c, dest, t0, 70, 0.95);
+  cri(c, dest, t0 + 0.08);
+}
+
 export function jouerSon(niveau: NiveauHorror): void {
   const c = getContexte();
   // Contexte encore bloqué (aucune interaction avant) : on reste silencieux.

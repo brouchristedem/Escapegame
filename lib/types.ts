@@ -130,6 +130,77 @@ export interface BonneReponseSurprise {
   at: number; // heure serveur (epoch ms)
 }
 
+// --- Effets d'horreur pilotés par l'organisateur ---
+// Deux effets, activables et désactivables à tout moment depuis l'onglet
+// "Événements" (et la télécommande) ; les écrans joueur les suivent en temps
+// réel (voir app/components/EffetsHorreurJeu.tsx) :
+// - "jumpscare" : l'écran se fige une demi-seconde, puis un visage ou l'œil du
+//   logo surgit en plein écran (clignotement limité à 3 par seconde) avec un
+//   cri ou un bruit de métal lacéré synthétisé par le navigateur. Armé =
+//   apparitions aléatoires chez les joueurs ; "declenche" = déclenchement
+//   immédiat par l'organisateur.
+// - "possede" : l'interface se retourne lentement (miroir) et/ou les boutons
+//   fuient le curseur ; maintenir une touche du clavier (ou poser un 2e doigt)
+//   suspend l'effet (voir lib/possede.ts).
+export type VisuelJumpscare = "oeil" | "visage" | "alea";
+export type FrequenceJumpscare = "rare" | "normale" | "frequente";
+export type RetournementPossede = "aucun" | "horizontal" | "vertical";
+
+export interface EffetsHorreur {
+  jumpscare: {
+    actif: boolean;
+    visuel: VisuelJumpscare;
+    frequence: FrequenceJumpscare;
+    declenche: { id: string; at: number } | null;
+  };
+  possede: {
+    actif: boolean;
+    retournement: RetournementPossede;
+    boutonsFuient: boolean;
+  };
+}
+
+// Version partielle telle que stockée dans Firestore (écritures par morceaux).
+export interface EffetsHorreurPartiel {
+  jumpscare?: Partial<EffetsHorreur["jumpscare"]>;
+  possede?: Partial<EffetsHorreur["possede"]>;
+}
+
+// Tout est désactivé par défaut : un jeu existant ne change pas.
+export const EFFETS_HORREUR_PAR_DEFAUT: EffetsHorreur = {
+  jumpscare: { actif: false, visuel: "alea", frequence: "normale", declenche: null },
+  possede: { actif: false, retournement: "horizontal", boutonsFuient: true },
+};
+
+function dans<T extends string>(valeur: unknown, permis: readonly T[], defaut: T): T {
+  return typeof valeur === "string" && (permis as readonly string[]).includes(valeur) ? (valeur as T) : defaut;
+}
+
+// Complète (et valide) ce qui est lu dans Firestore : une valeur absente ou
+// inattendue retombe sur la valeur par défaut, l'effet ne plante jamais.
+export function fusionnerEffetsHorreur(partiel?: EffetsHorreurPartiel | null): EffetsHorreur {
+  const d = EFFETS_HORREUR_PAR_DEFAUT;
+  const j = partiel?.jumpscare;
+  const p = partiel?.possede;
+  const declenche = j?.declenche;
+  return {
+    jumpscare: {
+      actif: j?.actif === true,
+      visuel: dans(j?.visuel, ["oeil", "visage", "alea"] as const, d.jumpscare.visuel),
+      frequence: dans(j?.frequence, ["rare", "normale", "frequente"] as const, d.jumpscare.frequence),
+      declenche:
+        declenche && typeof declenche.id === "string" && typeof declenche.at === "number"
+          ? { id: declenche.id, at: declenche.at }
+          : null,
+    },
+    possede: {
+      actif: p?.actif === true,
+      retournement: dans(p?.retournement, ["aucun", "horizontal", "vertical"] as const, d.possede.retournement),
+      boutonsFuient: typeof p?.boutonsFuient === "boolean" ? p.boutonsFuient : d.possede.boutonsFuient,
+    },
+  };
+}
+
 // --- Formation des équipes ---
 // Un participant s'inscrit via le QR code (page /g/{gameId}/inscription) ;
 // l'organisateur répartit ensuite les inscrits au hasard dans les équipes
@@ -198,6 +269,7 @@ export interface QuizConfig {
   // Effets effrayants sur mauvaise réponse (sang, sons, vibrations, cooldown),
   // interrupteur de l'organisateur pour toutes les équipes. Absent = activés.
   effetsHorror?: boolean;
+  effetsHorreur?: EffetsHorreurPartiel; // jumpscare / interface possédée ; absent = tout désactivé
 }
 
 // Résumé d'un jeu affiché dans la liste des jeux de l'organisateur

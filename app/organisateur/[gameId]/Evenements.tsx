@@ -16,6 +16,7 @@ import {
   terminerEnigmeSurprise,
 } from "@/lib/data";
 import { BonneReponseSurprise, EffetEquipe, EnigmeSurprise, Team, TypeEffet, UniteTemps, versSecondes } from "@/lib/types";
+import EffetsHorreurPanneau from "./EffetsHorreurPanneau";
 
 function formaterHeure(epochMs: number): string {
   return new Date(epochMs).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -332,6 +333,8 @@ export default function Evenements({ gameId, teams }: { gameId: string; teams: T
           </button>
         </div>
       </div>
+
+      <EffetsHorreurPanneau gameId={gameId} />
 
       {effetsActifs.length > 0 && (
         <div>

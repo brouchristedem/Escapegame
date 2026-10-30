@@ -536,3 +536,103 @@ button[class*="from-lueur"]:disabled {
   border-color: rgba(214, 239, 255, 0.15);
   box-shadow: none;
 }
+
+/* ------------------------------------------------------------------------
+   Effets d'horreur pilotés par l'organisateur (voir EffetsHorreurJeu.tsx,
+   lib/possede.ts et JumpscareOverlay.tsx).
+   ------------------------------------------------------------------------ */
+
+/* Interface possédée : <main> se retourne lentement. On utilise la propriété
+   `scale` (et non `transform`) pour ne pas entrer en conflit avec les
+   tremblements d'erreur ni les classes Tailwind. Maintenir une touche (ou poser
+   un 2e doigt) pose data-possede-verrou : la page se redresse tant qu'on tient. */
+html[data-possede] main { transition: scale 9s ease-in-out; }
+html[data-possede="horizontal"] main { scale: -1 1; }
+html[data-possede="vertical"] main { scale: 1 -1; }
+html[data-possede="retour"] main { transition: scale 1.2s ease-out; scale: 1 1; }
+html[data-possede-verrou] main { transition: scale 0.6s ease-out; scale: 1 1; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-possede] main { transition: none; }
+}
+
+/* Jumpscare : 0,5 s où l'écran « se fige » (animations en pause, saisie
+   bloquée), puis le visage ou l'œil surgit. Le clignotement alterne noir /
+   rouge toutes les 0,18 s, soit moins de 3 flashs par seconde (seuil de
+   sécurité photosensible) ; avec « réduire les animations » il n'y en a aucun. */
+.jumpscare-fige {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  cursor: none;
+  touch-action: none;
+}
+html[data-jumpscare-fige] *,
+html[data-jumpscare-fige] *::before,
+html[data-jumpscare-fige] *::after {
+  animation-play-state: paused !important;
+}
+.jumpscare-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 91;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  overflow: hidden;
+  background: #000;
+  animation: jumpscare-strobe 1.44s steps(1, end) forwards, jumpscare-sortie 0.25s ease-out 1.25s forwards;
+}
+@keyframes jumpscare-strobe {
+  0% { background: #000; }
+  12.5% { background: #a3000f; }
+  25% { background: #000; }
+  37.5% { background: #a3000f; }
+  50% { background: #000; }
+  62.5% { background: #a3000f; }
+  75% { background: #000; }
+  87.5% { background: #a3000f; }
+  100% { background: #000; }
+}
+@keyframes jumpscare-sortie {
+  to { opacity: 0; }
+}
+.jumpscare-sujet {
+  animation: jumpscare-surgit 0.3s cubic-bezier(0.2, 0.9, 0.3, 1) both, jumpscare-tremble 0.12s steps(2, end) 0.3s infinite;
+}
+@keyframes jumpscare-surgit {
+  0% { transform: scale(0.35); opacity: 0; }
+  60% { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+@keyframes jumpscare-tremble {
+  0% { translate: 0 0; }
+  50% { translate: 7px -5px; }
+  100% { translate: -6px 4px; }
+}
+.jumpscare-oeil {
+  width: min(94vw, 820px);
+  height: auto;
+  filter: drop-shadow(0 0 26px rgba(255, 20, 30, 0.9));
+}
+.jumpscare-visage {
+  width: min(86vw, 520px);
+  height: auto;
+  filter: drop-shadow(0 0 26px rgba(255, 30, 30, 0.9));
+}
+.jumpscare-texte {
+  font-family: var(--font-cinzel), Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: #ff3b3b;
+  font-size: clamp(1.4rem, 7vw, 2.6rem);
+  text-shadow: 0 0 16px rgba(255, 0, 0, 0.85);
+}
+@media (prefers-reduced-motion: reduce) {
+  .jumpscare-scene {
+    background: radial-gradient(circle at 50% 45%, #2a0008 0%, #000 75%);
+    animation: jumpscare-sortie 0.25s ease-out 1.25s forwards;
+  }
+  .jumpscare-sujet { animation: none; }
+}
