@@ -334,7 +334,7 @@ export const DEFAULT_GAME_TEXTS: GameTexts = {
     "L'organisateur a temporairement mis le jeu en pause. Ne quittez pas cette page, ça va reprendre très vite — votre progression est conservée.",
 
   messagesReussite: ["GREEN FLAG", "C'EST TCHÔ", "JOLIIIIIE"],
-  messagesEchec: ["ÈCHOUWEY", "RED FLAG"],
+  messagesEchec: ["ÈCHOUWEY", "RED FLAG", "Faux…", "Il t'entend…", "Tu perds du temps…"],
   messagesCodeCorrect: ["Bravo, c'est le bon code !"],
   messagesCodeIncorrect: ["Ce code n'est pas le bon. Réessayez."],
 };

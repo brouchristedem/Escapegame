@@ -46,6 +46,17 @@ import RichText from "@/app/components/RichText";
 import PauseOverlay from "@/app/components/PauseOverlay";
 import GlobalOverlays from "@/app/components/GlobalOverlays";
 import EvenementsOverlay from "@/app/components/EvenementsOverlay";
+import EffetHorror from "@/app/components/EffetHorror";
+import {
+  niveauPourErreurs,
+  lireEffetsActifs,
+  sauverEffetsActifs,
+  debloquerSon,
+  COOLDOWN_APRES_ERREURS,
+  COOLDOWN_SECONDES,
+  MESSAGE_COOLDOWN,
+  type NiveauHorror,
+} from "@/lib/horror";
 import { useAdminMode, editModePersiste } from "@/lib/adminMode";
 import { ACIER, ALERTE, couleurChrono } from "@/lib/chrono";
 import { sauvegarderCache, lireCache, sauvegarderProgressionHorsLigne,
@@ -113,6 +124,68 @@ export default function JouerEquipe() {
     gameStatusRef.current = gameStatus;
   }, [gameStatus]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Effets "horror" sur mauvaise réponse (voir lib/horror.ts) : le niveau monte
+  // avec les erreurs d'affilée sur la même étape. Le compteur est une ref car le
+  // setInterval du chrono garde la fonction handleTimeout du rendu où il a été
+  // créé : un state y serait périmé.
+  const [effetsActifs, setEffetsActifs] = useState(lireEffetsActifs);
+  const [effet, setEffet] = useState<{ id: number; niveau: NiveauHorror } | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const erreursSuiteRef = useRef(0);
+  const effetSeqRef = useRef(0);
+  // Toujours la dernière version de handleTimeout (déclarée plus bas) pour le chrono.
+  const handleTimeoutRef = useRef<() => void>(() => {});
+  const effetsActifsRef = useRef(effetsActifs);
+  const editModeRef = useRef(editMode);
+  useEffect(() => {
+    effetsActifsRef.current = effetsActifs;
+    editModeRef.current = editMode;
+  }, [effetsActifs, editMode]);
+
+  // Sur mobile le son ne démarre qu'après une interaction : on le débloque au
+  // premier tap / clic / touche, bien avant la première mauvaise réponse.
+  useEffect(() => {
+    const evenements = ["click", "touchend", "keydown"] as const;
+    const debloquer = () => {
+      debloquerSon();
+      evenements.forEach((e) => window.removeEventListener(e, debloquer));
+    };
+    evenements.forEach((e) => window.addEventListener(e, debloquer));
+    return () => evenements.forEach((e) => window.removeEventListener(e, debloquer));
+  }, []);
+
+  // Décompte du cooldown (« Il approche… ») avant de pouvoir réessayer.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  function declencherErreur() {
+    erreursSuiteRef.current += 1;
+    if (!effetsActifsRef.current || editModeRef.current) return;
+    const n = erreursSuiteRef.current;
+    effetSeqRef.current += 1;
+    setEffet({ id: effetSeqRef.current, niveau: niveauPourErreurs(n) });
+    if (n >= COOLDOWN_APRES_ERREURS) setCooldown(COOLDOWN_SECONDES);
+  }
+
+  function reinitialiserErreurs() {
+    erreursSuiteRef.current = 0;
+    setCooldown(0);
+    setEffet(null);
+  }
+
+  function basculerEffets() {
+    const suivant = !effetsActifs;
+    setEffetsActifs(suivant);
+    sauverEffetsActifs(suivant);
+    if (!suivant) {
+      setEffet(null);
+      setCooldown(0);
+    }
+  }
 
   // Écoute en temps réel le bouton pause d'urgence de l'organisateur : bloque
   // le circuit chez toutes les équipes en même temps sans toucher à leur
@@ -321,7 +394,7 @@ export default function JouerEquipe() {
         if (t === null) return null;
         if (t <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
-          handleTimeout();
+          handleTimeoutRef.current();
           return 0;
         }
         return t - 1;
@@ -402,6 +475,7 @@ export default function JouerEquipe() {
   ]);
 
   function goNextQuestion() {
+    reinitialiserErreurs();
     setFeedback(null);
     setAwaitingContinue(false);
     setSelected(null);
@@ -436,6 +510,7 @@ export default function JouerEquipe() {
 
   function allerAEtape(cible: number) {
     if (cible < 0 || cible >= questions.length) return;
+    reinitialiserErreurs();
     setFeedback(null);
     setAwaitingContinue(false);
     setSelected(null);
@@ -527,7 +602,11 @@ export default function JouerEquipe() {
     // jusqu'à trouver la bonne réponse.
     setFeedback({ text: texts.jeuTexteTempsEcoule, ok: false });
     setNeedsRetryClick(true);
+    declencherErreur();
   }
+  useEffect(() => {
+    handleTimeoutRef.current = handleTimeout;
+  });
 
   // Page "info" : aucune réponse à donner, on passe directement à la suite.
   function continuerPageInfo() {
@@ -539,6 +618,7 @@ export default function JouerEquipe() {
     if (timerRef.current) clearInterval(timerRef.current);
 
     if (correct) {
+      reinitialiserErreurs();
       setFragmentTexte(question.fragmentTexte?.trim() ? question.fragmentTexte : null);
       setFeedback({
         // Tous les feedback viennent uniquement de "Textes du site" (jamais du
@@ -556,6 +636,7 @@ export default function JouerEquipe() {
         ok: false,
       });
       setNeedsRetryClick(true);
+      declencherErreur();
     } else {
       setAttempts((a) => a + 1);
       setTotalTentatives((n) => n + 1);
@@ -566,6 +647,7 @@ export default function JouerEquipe() {
         ok: false,
       });
       setNeedsRetryClick(true);
+      declencherErreur();
     }
   }
 
@@ -637,9 +719,22 @@ export default function JouerEquipe() {
   if (!question) return <LoadingScreen />;
 
   const isLastQuestion = index + 1 >= questions.length;
+  // Tremblement de la page aux niveaux 2 et 3 (a / b alternent pour relancer
+  // l'animation si deux erreurs se suivent de près).
+  const secousse =
+    effet && effet.niveau >= 2 ? (effet.id % 2 === 0 ? "animate-horror-shake-a" : "animate-horror-shake-b") : "";
+  const enCooldown = cooldown > 0 && !editMode;
 
   return (
     <>
+      {effet && (
+        <EffetHorror
+          key={effet.id}
+          id={effet.id}
+          niveau={effet.niveau}
+          onFin={() => setEffet((e) => (e && e.id === effet.id ? null : e))}
+        />
+      )}
       {gameStatus === "pause" && !editMode && (
         <PauseOverlay titre={texts.pauseTitre} message={texts.pauseMessage} />
       )}
@@ -663,7 +758,14 @@ export default function JouerEquipe() {
           </span>
         </div>
       )}
-      <main className="min-h-screen bg-brume text-center">
+      <main
+        className={`min-h-screen bg-brume text-center ${secousse}`}
+        style={
+          effet && effet.niveau >= 2
+            ? ({ "--secousse": effet.niveau === 3 ? "9px" : "5px" } as React.CSSProperties)
+            : undefined
+        }
+      >
       <div className="max-w-xl mx-auto w-full flex flex-col px-6 py-8">
       <div className="mb-6">
         <div className="flex items-center justify-between text-sm text-nuit/90 mb-2">
@@ -931,9 +1033,16 @@ export default function JouerEquipe() {
       {!isInfoPage && (needsRetryClick || editMode) && (
         <button
           onClick={handleRetry}
-          className="group mt-6 inline-flex items-center justify-center gap-2 self-center rounded-full bg-gradient-to-r from-lueur to-lueur-fonce px-8 py-3.5 font-semibold text-nuit shadow-lg shadow-acier/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:scale-[0.98]"
+          disabled={enCooldown}
+          className="group mt-6 inline-flex items-center justify-center gap-2 self-center rounded-full bg-gradient-to-r from-lueur to-lueur-fonce px-8 py-3.5 font-semibold text-nuit shadow-lg shadow-acier/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:scale-[0.98] disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-none disabled:bg-nuit disabled:text-red-300 disabled:shadow-none"
         >
-          <EditableText as="span" value={texts.jeuLabelReessayer} onSave={(v) => saveGlobalText("jeuLabelReessayer", v)} className="text-nuit" />
+          {enCooldown ? (
+            <span className="animate-glitch-flicker">
+              {MESSAGE_COOLDOWN} {cooldown}
+            </span>
+          ) : (
+            <EditableText as="span" value={texts.jeuLabelReessayer} onSave={(v) => saveGlobalText("jeuLabelReessayer", v)} className="text-nuit" />
+          )}
         </button>
       )}
 
@@ -944,6 +1053,16 @@ export default function JouerEquipe() {
         >
           {isLastQuestion ? texts.jeuLabelVoirResultat : texts.jeuLabelEnigmeSuivante}
           <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
+        </button>
+      )}
+
+      {!editMode && (
+        <button
+          type="button"
+          onClick={basculerEffets}
+          className="mt-10 self-center text-xs text-nuit/55 underline underline-offset-2"
+        >
+          {effetsActifs ? "🩸 Effets effrayants : activés" : "Effets effrayants : désactivés"}
         </button>
       )}
 
