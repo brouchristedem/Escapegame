@@ -653,11 +653,25 @@ html[data-jumpscare-fige] *::after {
   82% { opacity: 0.6; }
   84% { opacity: 0.1; }
 }
-.logo-coeur {
-  background: radial-gradient(circle at 50% 50%, transparent 46%, rgba(150, 14, 24, 0.28) 74%, rgba(179, 18, 28, 0) 100%);
-  mix-blend-mode: screen;
-  animation: logo-coeur 2.4s ease-in-out infinite;
+/* Arrivée : le médaillon surgit de l'ombre en grossissant, puis le visuel continue d'avancer très lentement. */
+@keyframes logo-arrivee {
+  0% { opacity: 0; transform: scale(0.72); }
+  100% { opacity: 1; transform: scale(1); }
 }
+@keyframes logo-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.14); }
+}
+@keyframes gravures-pulse {
+  0%, 100% { opacity: 0.35; }
+  10% { opacity: 1; }
+  20% { opacity: 0.5; }
+  30% { opacity: 0.85; }
+  45% { opacity: 0.35; }
+}
+.logo-approche { animation: logo-arrivee 2.2s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.logo-avance { animation: logo-zoom 14s ease-in-out 2s infinite alternate; transform-origin: 50% 50%; }
+.logo-gravures-pulse { mix-blend-mode: screen; animation: gravures-pulse 2.4s ease-in-out infinite; }
 .logo-vacille { background: #000; animation: logo-vacille 11s linear infinite; }
 .titre-gravure {
   color: #9b948a;
@@ -671,6 +685,6 @@ html[data-jumpscare-fige] *::after {
 }
 .pastille-en-jeu { animation: pastille-en-jeu 1.6s ease-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .logo-coeur, .logo-vacille, .pastille-en-jeu { animation: none !important; }
+  .logo-approche, .logo-avance, .logo-gravures-pulse, .logo-vacille, .pastille-en-jeu { animation: none !important; }
   .logo-vacille { opacity: 0; }
 }

@@ -23,18 +23,28 @@ export default function EscapeLogo({
       <div
         role="img"
         aria-label="ESCAPE GAME CI, le secret est ici"
-        className={`relative aspect-square overflow-hidden rounded-full bg-black ring-1 ring-sang/30 shadow-[0_0_18px_-6px_rgba(224,36,47,0.25)] ${className}`}
+        className={`logo-approche relative aspect-square overflow-hidden rounded-full bg-black ring-1 ring-white/10 shadow-[0_0_40px_-10px_rgba(0,0,0,0.95)] ${className}`}
       >
-        <Image
-          src="/brand/logo-escape-game-ci.webp"
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 640px) 160px, 220px"
-          className="object-cover"
-        />
-        {/* Couches d'ambiance : le centre (l'œil) reste transparent, jamais modifié. */}
-        <div aria-hidden="true" className="logo-coeur pointer-events-none absolute inset-0" />
+        {/* Le visuel avance lentement vers le spectateur (zoom dans le médaillon). */}
+        <div className="logo-avance absolute inset-0">
+          <Image
+            src="/brand/logo-escape-game-ci.webp"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 640px) 240px, 320px"
+            className="object-cover"
+          />
+          {/* Gravures seules : leur rouge pulse comme un cœur. Le reste du logo (dont l'œil) n'est jamais modifié. */}
+          <Image
+            src="/brand/logo-gravures.webp"
+            alt=""
+            fill
+            sizes="(max-width: 640px) 240px, 320px"
+            aria-hidden="true"
+            className="logo-gravures-pulse object-cover pointer-events-none"
+          />
+        </div>
         <div aria-hidden="true" className="logo-vacille pointer-events-none absolute inset-0" />
       </div>
       {nomAnime && (
