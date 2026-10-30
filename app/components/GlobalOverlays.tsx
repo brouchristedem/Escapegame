@@ -82,7 +82,7 @@ export default function GlobalOverlays({
       {secondesRestantes !== null && (
         <span
           className={`pointer-events-auto font-codemono font-semibold rounded-full px-4 py-1.5 shadow-md text-sm transition-colors ${
-            secondesRestantes <= 60 ? "bg-alerte text-white animate-timer-critical" : "bg-nuit"
+            secondesRestantes <= 60 ? "bg-alerte text-white animate-timer-critical" : "bg-abime"
           }`}
           style={
             secondesRestantes <= 60

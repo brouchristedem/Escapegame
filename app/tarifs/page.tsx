@@ -15,7 +15,7 @@ export default async function Tarifs({
   const retourHref = jeu ? `/g/${jeu}` : "/";
 
   return (
-    <main className={`relative min-h-screen bg-brume px-6 py-12 overflow-hidden`}>
+    <main className="theme-abime relative min-h-screen bg-brume px-6 py-12 overflow-hidden">
       <Parallax speed={-60} className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-lueur/30 blur-3xl" />
       <Parallax speed={70} className="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-lueur/25 blur-3xl" />
 

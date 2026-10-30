@@ -96,7 +96,7 @@ export default function EcranProjection() {
                 ? "border-alerte text-alerte"
                 : critique
                   ? "border-alerte bg-alerte text-white animate-timer-critical"
-                  : "border-nuit bg-nuit text-lueur"
+                  : "border-abime bg-abime text-lueur"
             }`}
             // Bleu glacial au calme, de plus en plus rouge sous 15 minutes.
             style={

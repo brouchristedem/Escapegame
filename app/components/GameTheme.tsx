@@ -1,14 +1,12 @@
 "use client";
 
-// Applique la personnalisation d'un jeu (couleurs + logo) à toutes ses pages
-// (/g/[gameId]/...). Le conteneur est en `display: contents` : il ne change
-// aucune mise en page, il ne fait que poser les variables CSS que les
-// classes du jeu (bg-brume, text-acier, ...) lisent déjà.
+// Applique la personnalisation d'un jeu à toutes ses pages (/g/[gameId]/...).
+// Seul le logo est personnalisable : les couleurs sont celles de la palette
+// ESCAPE GAME CI, identiques sur tout le site (voir .theme-abime dans globals.css).
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getQuizConfig } from "@/lib/data";
-import { variablesTheme } from "@/lib/theme";
 import { Personnalisation } from "@/lib/types";
 
 const LogoContext = createContext<string | null>(null);
@@ -32,7 +30,7 @@ export default function GameTheme({ children }: { children: React.ReactNode }) {
 
   return (
     <LogoContext.Provider value={perso?.logo || null}>
-      <div style={{ display: "contents", ...variablesTheme(perso) }}>{children}</div>
+      {children}
     </LogoContext.Provider>
   );
 }
