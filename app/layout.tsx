@@ -5,6 +5,8 @@ import "./globals.css";
 import { AdminModeProvider } from "@/lib/adminMode";
 import { AuthProvider } from "@/lib/auth";
 import Lanterne from "@/app/components/Lanterne";
+import OeilRodeur from "@/app/components/OeilRodeur";
+import LogoCoin from "@/app/components/LogoCoin";
 
 // Polices de l'identité "Le Gardien" : Cinzel (titres gravés), Alegreya Sans
 // (texte courant, auto-hébergé pour garantir les chiffres alignés), IBM Plex Mono (chrono, codes).
@@ -31,13 +33,13 @@ export const metadata: Metadata = {
     url: "/",
     title: "ESCAPE GAME CI · Énigmes en équipe",
     description: "Une plateforme d'escape game numérique : chaque équipe suit son parcours d'énigmes.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "ESCAPE GAME CI" }],
+    images: [{ url: "/og-image.png?v=2", width: 1200, height: 630, alt: "ESCAPE GAME CI, le secret est ici" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "ESCAPE GAME CI · Énigmes en équipe",
     description: "Une plateforme d'escape game numérique : chaque équipe suit son parcours d'énigmes.",
-    images: ["/og-image.png"],
+    images: ["/og-image.png?v=2"],
   },
 };
 
@@ -51,6 +53,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <Lanterne />
+          <OeilRodeur />
+          <LogoCoin />
           <AdminModeProvider>
             <div className="flex-1 flex flex-col">{children}</div>
           </AdminModeProvider>
