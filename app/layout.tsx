@@ -33,13 +33,13 @@ export const metadata: Metadata = {
     url: "/",
     title: "ESCAPE GAME CI · Énigmes en équipe",
     description: "Une plateforme d'escape game numérique : chaque équipe suit son parcours d'énigmes.",
-    images: [{ url: "/og-image.png?v=2", width: 1200, height: 630, alt: "ESCAPE GAME CI, le secret est ici" }],
+    images: [{ url: "/og-image.png?v=3", width: 1200, height: 630, alt: "ESCAPE GAME CI, quelque chose vous attend" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "ESCAPE GAME CI · Énigmes en équipe",
     description: "Une plateforme d'escape game numérique : chaque équipe suit son parcours d'énigmes.",
-    images: ["/og-image.png?v=2"],
+    images: ["/og-image.png?v=3"],
   },
 };
 
