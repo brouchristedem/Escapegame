@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, use } from "react";
-import { getAllTeams, claimerChef, getQuizConfig, saveQuizConfig } from "@/lib/data";
-import { Team, fusionnerTextes, GameTexts } from "@/lib/types";
+import { getAllTeams, claimerChef, getQuizConfig, saveQuizConfig, ecouterEquipesEnJeu } from "@/lib/data";
+import { Team, fusionnerTextes, GameTexts, CHEF_LOCK_TIMEOUT_MS } from "@/lib/types";
 import { getSessionId } from "@/lib/session";
 import LoadingScreen from "@/app/components/LoadingScreen";
 import EditableText from "@/app/components/EditableText";
@@ -20,6 +20,8 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
   const [selected, setSelected] = useState<string | null>(null);
   const [navigating, setNavigating] = useState(false);
   const [erreurChef, setErreurChef] = useState(false);
+  const [etatsEquipes, setEtatsEquipes] = useState<{ teamId: string; chefSessionId: string; updatedAt: number }[]>([]);
+  const [maintenant, setMaintenant] = useState(() => Date.now());
   const continueRef = useRef<HTMLDivElement>(null);
   const aucunDirect = useRef(false);
 
@@ -41,6 +43,27 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
       })
       .finally(() => setLoading(false));
   }, [gameId]);
+
+  // Pastille « en jeu » : écoute en direct les chefs connectés, et réévalue la
+  // fraîcheur de leur signe de vie toutes les 5 s (un chef qui quitte sans
+  // prévenir cesse d'être « en jeu » au bout de CHEF_LOCK_TIMEOUT_MS).
+  useEffect(() => {
+    const stop = ecouterEquipesEnJeu(gameId, setEtatsEquipes);
+    const tick = setInterval(() => setMaintenant(Date.now()), 5_000);
+    return () => {
+      stop();
+      clearInterval(tick);
+    };
+  }, [gameId]);
+
+  // Une équipe est « en jeu » si un AUTRE appareil que celui-ci en est le chef
+  // et a donné signe de vie récemment (même règle que claimerChef).
+  const moi = getSessionId();
+  const enJeu = new Set(
+    etatsEquipes
+      .filter((e) => e.chefSessionId && e.chefSessionId !== moi && maintenant - e.updatedAt < CHEF_LOCK_TIMEOUT_MS)
+      .map((e) => e.teamId)
+  );
 
   // Arrivée depuis la page d'inscription (« Je suis le chef d'équipe ») : le
   // lien porte l'équipe du participant (?equipe=...). On l'ouvre directement,
@@ -149,6 +172,12 @@ export default function ChoixEquipe({ params }: { params: Promise<{ gameId: stri
                 }`}
               >
                 {t.nom}
+                {enJeu.has(t.id) && (
+                  <span className="ml-2 inline-flex items-center gap-1.5 align-middle text-xs font-medium text-alerte" title="Une personne est en train de jouer">
+                    <span className="pastille-en-jeu h-2.5 w-2.5 rounded-full bg-sang-vif" aria-hidden="true" />
+                    en jeu
+                  </span>
+                )}
               </button>
             );
           })}

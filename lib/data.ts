@@ -613,6 +613,32 @@ export function ecouterLiveState(
 }
 
 
+// Pastille « en jeu » sur la liste des équipes : écoute en direct tous les
+// liveState du jeu et renvoie, pour chaque équipe, la session du chef et la
+// fraîcheur de son dernier signe de vie (horloge serveur). Le composant
+// décide lui-même si le verrou est encore frais (CHEF_LOCK_TIMEOUT_MS).
+export function ecouterEquipesEnJeu(
+  gameId: string,
+  callback: (etats: { teamId: string; chefSessionId: string; updatedAt: number }[]) => void
+): () => void {
+  return onSnapshot(
+    collection(db, GAMES_COL, gameId, "liveState"),
+    (snap) => {
+      callback(
+        snap.docs.map((d) => {
+          const data = d.data() as Partial<LiveState>;
+          return {
+            teamId: d.id,
+            chefSessionId: data.chefSessionId ?? "",
+            updatedAt: updatedAtEnMillis(data.updatedAt),
+          };
+        })
+      );
+    },
+    () => callback([])
+  );
+}
+
 // --- Événements surprise (voir EnigmeSurprise / EffetEquipe dans types.ts) ---
 
 function bonnesReponsesCol(gameId: string, eventId: string) {

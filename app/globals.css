@@ -636,3 +636,38 @@ html[data-jumpscare-fige] *::after {
   }
   .jumpscare-sujet { animation: none; }
 }
+
+/* Logo ESCAPE GAME CI : battement de cœur sourd et vacillement de lumière.
+   Les couches laissent le centre (l'œil) transparent : l'œil n'est jamais modifié. */
+@keyframes logo-coeur {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  10% { opacity: 0.9; transform: scale(1.03); }
+  20% { opacity: 0.35; transform: scale(1); }
+  30% { opacity: 0.7; transform: scale(1.02); }
+  45% { opacity: 0.25; transform: scale(1); }
+}
+@keyframes logo-vacille {
+  0%, 38%, 46%, 80%, 86%, 100% { opacity: 0; }
+  40% { opacity: 0.35; }
+  43% { opacity: 0.12; }
+  82% { opacity: 0.45; }
+  84% { opacity: 0.1; }
+}
+.logo-coeur {
+  background: radial-gradient(circle at 50% 50%, transparent 46%, rgba(179, 18, 28, 0.55) 74%, rgba(179, 18, 28, 0) 100%);
+  mix-blend-mode: screen;
+  animation: logo-coeur 2.4s ease-in-out infinite;
+}
+.logo-vacille { background: #000; animation: logo-vacille 11s linear infinite; }
+.titre-machine-curseur { animation: lueur-respire 1s steps(1) infinite; }
+
+/* Pastille « en jeu » sur les équipes dont le chef est connecté. */
+@keyframes pastille-en-jeu {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 36, 47, 0.75); }
+  50% { box-shadow: 0 0 0 6px rgba(224, 36, 47, 0); }
+}
+.pastille-en-jeu { animation: pastille-en-jeu 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .logo-coeur, .logo-vacille, .titre-machine-curseur, .pastille-en-jeu { animation: none !important; }
+  .logo-vacille { opacity: 0; }
+}
