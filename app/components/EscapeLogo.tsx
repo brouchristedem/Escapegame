@@ -40,7 +40,7 @@ export default function EscapeLogo({
       {nomAnime && (
         <TitreMachine
           texte="ESCAPE GAME CI"
-          className={`mt-4 font-headline font-semibold uppercase tracking-[0.3em] text-glace-pale ${classeNom}`}
+          className={`mt-4 titre-gravure font-headline font-semibold uppercase tracking-[0.32em] ${classeNom}`}
         />
       )}
       {titre && <h1 className="sr-only">ESCAPE GAME CI</h1>}

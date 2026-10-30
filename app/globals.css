@@ -659,7 +659,10 @@ html[data-jumpscare-fige] *::after {
   animation: logo-coeur 2.4s ease-in-out infinite;
 }
 .logo-vacille { background: #000; animation: logo-vacille 11s linear infinite; }
-.titre-machine-curseur { animation: lueur-respire 1s steps(1) infinite; }
+.titre-gravure {
+  color: #d8d2c8;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.9), 0 0 14px rgba(179, 18, 28, 0.75), 0 0 34px rgba(179, 18, 28, 0.35);
+}
 
 /* Pastille « en jeu » sur les équipes dont le chef est connecté. */
 @keyframes pastille-en-jeu {
@@ -668,6 +671,6 @@ html[data-jumpscare-fige] *::after {
 }
 .pastille-en-jeu { animation: pastille-en-jeu 1.6s ease-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .logo-coeur, .logo-vacille, .titre-machine-curseur, .pastille-en-jeu { animation: none !important; }
+  .logo-coeur, .logo-vacille, .pastille-en-jeu { animation: none !important; }
   .logo-vacille { opacity: 0; }
 }
