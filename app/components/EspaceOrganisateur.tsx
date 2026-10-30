@@ -5,7 +5,7 @@ import Link from "next/link";
 import { listerJeux, creerJeu, supprimerJeu, changerCodeAcces, ERREUR_CODE_PRIS } from "@/lib/data";
 import { GameMeta } from "@/lib/types";
 import { useAuth, estProprietaire } from "@/lib/auth";
-import EscapeLogo from "@/app/components/EscapeLogo";
+import OeilLogo from "@/app/components/OeilLogo";
 
 // Composant partagé entre /organisateur (ouvert à tout organisateur) et
 // /admin (réservé au propriétaire de la plateforme, via restrictedEmail).
@@ -67,7 +67,7 @@ function ConnexionOrganisateur({ titre }: { titre: string }) {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-white">
-      <div className="mb-4"><EscapeLogo className="w-20" nom={false} /></div>
+      <div className="mb-4"><OeilLogo className="w-20" /></div>
       <h1 className="font-headline text-xl font-semibold mb-1 text-nuit">{titre}</h1>
       <p className="text-sm text-nuit/90 mb-6">Connectez-vous à votre compte</p>
 
@@ -183,7 +183,7 @@ function ListeJeux({ uid, email, titre }: { uid: string; email: string; titre: s
     <main className="min-h-screen px-6 py-12 bg-white max-w-2xl mx-auto w-full">
       <div className="flex items-start justify-between mb-1">
         <div className="flex items-center gap-3">
-          <EscapeLogo className="w-14" nom={false} />
+          <OeilLogo className="w-14" />
           <h1 className="font-headline text-2xl font-extrabold text-nuit">{titre}</h1>
         </div>
         <div className="flex flex-col items-end gap-1">

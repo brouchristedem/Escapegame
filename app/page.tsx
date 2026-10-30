@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { WHATSAPP_NUMERO } from "@/app/components/TarifsCards";
 import { trouverJeuParCode } from "@/lib/data";
 import EscapeLogo from "@/app/components/EscapeLogo";
+import OeilLogo from "@/app/components/OeilLogo";
 import Reveal from "@/app/components/gsap/Reveal";
 
 const MAX_TENTATIVES = 3;
@@ -115,7 +116,7 @@ export default function Accueil() {
 
       <header className="relative z-10 flex items-center justify-between gap-3 px-5 py-4 sm:px-8">
         <Link href="/" aria-label="ESCAPE GAME CI, accueil" className="flex items-center gap-2.5">
-          <EscapeLogo className="w-7" nom={false} />
+          <OeilLogo className="w-9" />
           <span className="hidden sm:inline font-headline text-xs font-semibold uppercase tracking-[0.3em] text-glace-pale">
             Escape Game CI
           </span>

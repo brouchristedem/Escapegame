@@ -1,6 +1,5 @@
 import Link from "next/link";
 import TarifsCards, { WHATSAPP_NUMERO } from "@/app/components/TarifsCards";
-import EscapeLogo from "@/app/components/EscapeLogo";
 import Reveal from "@/app/components/gsap/Reveal";
 import SplitReveal from "@/app/components/gsap/SplitReveal";
 import Parallax from "@/app/components/gsap/Parallax";
@@ -25,9 +24,6 @@ export default async function Tarifs({
         </Link>
 
         <div className="mt-8 text-center flex flex-col items-center">
-          <Reveal y={20}>
-            <div className="mb-6"><EscapeLogo className="w-24 drop-shadow-[0_6px_16px_rgba(8,16,40,0.5)]" nom={false} /></div>
-          </Reveal>
           <SplitReveal
             as="h1"
             text="Créer votre propre jeu"
