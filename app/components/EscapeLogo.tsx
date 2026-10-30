@@ -23,7 +23,7 @@ export default function EscapeLogo({
       <div
         role="img"
         aria-label="ESCAPE GAME CI, le secret est ici"
-        className={`relative aspect-square overflow-hidden rounded-full bg-black ring-1 ring-sang/50 shadow-[0_0_24px_-4px_rgba(224,36,47,0.55)] ${className}`}
+        className={`relative aspect-square overflow-hidden rounded-full bg-black ring-1 ring-sang/30 shadow-[0_0_18px_-6px_rgba(224,36,47,0.25)] ${className}`}
       >
         <Image
           src="/brand/logo-escape-game-ci.webp"

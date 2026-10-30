@@ -133,7 +133,7 @@ export default function Accueil() {
 
       <section className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-10 text-center">
         <Reveal y={20}>
-          <EscapeLogo className="w-28 sm:w-36 drop-shadow-[0_0_30px_rgba(143,211,255,0.25)]" titre nomAnime classeNom="text-lg sm:text-2xl" />
+          <EscapeLogo className="w-28 sm:w-36" titre nomAnime classeNom="text-lg sm:text-2xl" />
         </Reveal>
 
         <Reveal delay={0.25}>
