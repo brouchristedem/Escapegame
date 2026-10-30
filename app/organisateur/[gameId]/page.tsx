@@ -45,7 +45,7 @@ import FormationEquipes from "./FormationEquipes";
 import Telecommande from "./Telecommande";
 import ChecklistJourJ from "./ChecklistJourJ";
 import QrCodeModal from "@/app/components/QrCodeModal";
-import GameLogo from "@/app/components/GameLogo";
+import EscapeLogo from "@/app/components/EscapeLogo";
 
 const emptyQuestionForm = {
   salle: "",
@@ -601,7 +601,7 @@ function AdminPanel({ gameId }: { gameId: string }) {
     <main className="min-h-screen bg-white text-nuit px-4 sm:px-8 py-8">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
-          <GameLogo className="h-10 w-10 shrink-0" />
+          <EscapeLogo className="w-14" nom={false} />
           <div>
             <h1 className="font-headline text-2xl font-bold mb-1">Espace organisateur</h1>
             <p className="text-nuit/90 text-sm">Escape Game</p>
