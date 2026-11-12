@@ -6,7 +6,7 @@ import SplitReveal from "@/app/components/gsap/SplitReveal";
 import Parallax from "@/app/components/gsap/Parallax";
 
 
-const PORTFOLIO_URL = "https://christedem.vercel.app";
+const PORTFOLIO_URL = "https://portfolio-christedem.vercel.app";
 
 export default async function AProposDuDeveloppeur({
   searchParams,
@@ -52,7 +52,7 @@ export default async function AProposDuDeveloppeur({
             <p className="text-acier font-medium text-sm mt-1">
               Étudiant en Licence 3 Logistique à Abidjan
             </p>
-            <p className="text-nuit/80 text-sm mt-1">Développeur web, applications &amp; plateformes SaaS · Entrepreneur</p>
+            <p className="text-nuit/80 text-sm mt-1">Développeur web · Applications et plateformes SaaS</p>
           </Reveal>
         </div>
 
@@ -63,16 +63,14 @@ export default async function AProposDuDeveloppeur({
           className="cadre mt-10 bg-dalle rounded-2xl ring-1 ring-acier/25 shadow-[0_18px_40px_-14px_rgba(8,16,40,0.45)] p-6 text-nuit/90 leading-relaxed space-y-4"
         >
           <p>
-            Actuellement en Licence 3 Logistique, je poursuis un parcours à la croisée de deux mondes qui me
-            passionnent : l&apos;informatique, notamment l&apos;intelligence artificielle, et la logistique
-            digitale.
+            Je suis développeur web et étudiant en Licence 3 Logistique à Abidjan. Je conçois des plateformes
+            numériques simples et utiles, à la croisée de la technologie et de la logistique.
           </p>
           <p>
-            Cette plateforme est née d&apos;une envie simple : favoriser des moments d&apos;intégration et de
-            complicité, entre étudiants d&apos;abord, mais aussi entre amis. Elle s&apos;adresse à toute
-            personne souhaitant développer sa culture générale et son esprit d&apos;analyse en bonne
-            compagnie, ainsi qu&apos;à tout organisateur désireux de créer son propre jeu et d&apos;en faire
-            profiter d&apos;autres.
+            ESCAPE GAME CI permet d&apos;organiser des escape games en équipe, jouables directement depuis un
+            téléphone. Elle s&apos;adresse aux écoles, aux associations et aux groupes d&apos;amis qui
+            souhaitent animer un événement, renforcer la cohésion et stimuler la réflexion collective.
+            Chaque organisateur peut créer son propre jeu et le partager en quelques instants.
           </p>
           <p>
             Vous souhaitez créer votre propre jeu sur cette plateforme ?{" "}
@@ -82,7 +80,7 @@ export default async function AProposDuDeveloppeur({
             .
           </p>
           <p>
-            Je suis également le développeur de{" "}
+            Du même développeur :{" "}
             <a
               href="https://moncvproci.com"
               target="_blank"
@@ -91,8 +89,8 @@ export default async function AProposDuDeveloppeur({
             >
               MON CV PRO CI
             </a>
-            , une application web SaaS permettant de créer des CV professionnels (15 modèles) avec aperçu en
-            temps réel, export PDF et paiement mobile (Wave), déployée en production.
+            , une application en ligne pour créer un CV professionnel, avec aperçu en temps réel, export PDF
+            et paiement mobile.
           </p>
         </Reveal>
 
