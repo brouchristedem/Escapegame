@@ -89,8 +89,8 @@ export default async function AProposDuDeveloppeur({
             >
               MON CV PRO CI
             </a>
-            , une application en ligne pour créer un CV professionnel, avec aperçu en temps réel, export PDF
-            et paiement mobile.
+            , un créateur de CV professionnel en ligne : 15 modèles, aperçu avant paiement, scanner ATS
+            gratuit, export PDF et paiement Mobile Money.
           </p>
         </Reveal>
 
